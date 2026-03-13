@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
 import { jobAPI, applicationAPI, notificationAPI, studentAPI } from '../../services/api';
@@ -84,7 +84,7 @@ const StudentDashboard = () => {
             updateUser(profileRes.data);
             setShowRecoInput(false);
             setTargetRole('');
-            toast.success('✨ New mentor plan generated!');
+            toast.success('âœ¨ New mentor plan generated!');
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to generate recommendations');
         } finally {
@@ -117,9 +117,9 @@ const StudentDashboard = () => {
         <Layout title="Student Dashboard">
             <div className="fade-in">
                 <header style={{ marginBottom: '2rem' }}>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Welcome, {user?.name} 👋</h1>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Welcome, {user?.name} ðŸ‘‹</h1>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                        {user?.isVerified ? '✅ Profile Verified' : '⏳ Profile verification pending'}
+                        {user?.isVerified ? 'âœ… Profile Verified' : 'â³ Profile verification pending'}
                     </p>
                 </header>
 
@@ -151,55 +151,13 @@ const StudentDashboard = () => {
                 {/* Main Content Grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                     {/* AI Insights Card */}
-                    <div className="card">
-                        <div className="card-header">
-                            <h3 className="card-title">✨ AI Resume Insights</h3>
-                        </div>
-                        {hasResume ? (
-                            <div style={{ padding: '1rem' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(60px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
-                                    <CategoryScore label="Tech" score={aiResume.technicalSkillsScore || 0} color="var(--primary)" />
-                                    <CategoryScore label="Proj" score={aiResume.projectsScore || 0} color="var(--secondary)" />
-                                    <CategoryScore label="Exp" score={aiResume.experienceScore || 0} color="var(--success)" />
-                                    <CategoryScore label="ATS" score={aiResume.atsScore || 0} color="var(--warning)" />
-                                    <CategoryScore label="Comm" score={aiResume.clarityScore || 0} color="var(--danger)" />
-                                </div>
-                                <div className="flex justify-between items-center p-2 mb-4" style={{ background: 'var(--bg-dark)', borderRadius: '10px' }}>
-                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Resume Strength</span>
-                                    <span style={{ fontWeight: 800, color: resumeScore >= 70 ? 'var(--success)' : 'var(--warning)' }}>{resumeScore}%</span>
-                                </div>
-
-                                <div className="grid-cols-1-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                                    <div>
-                                        <h6 style={{ fontSize: '0.75rem', color: 'var(--success)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Strengths</h6>
-                                        <ul style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', paddingLeft: '1rem' }}>
-                                            {(aiResume.strengths || []).slice(0, 3).map((s, i) => <li key={i}>{s}</li>)}
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        <h6 style={{ fontSize: '0.75rem', color: 'var(--warning)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Gaps</h6>
-                                        <ul style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', paddingLeft: '1rem' }}>
-                                            {(aiResume.weaknesses || []).slice(0, 3).map((w, i) => <li key={i}>{w}</li>)}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center p-8">
-                                <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Unlock AI analysis by uploading your resume.</p>
-                                <Link to="/student/profile" className="btn btn-primary">Upload Resume</Link>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* AI Insights Card */}
                         {(() => {
                             const criteria = [
-                                { key: 'technicalSkills', label: 'Technical Skills', score: aiResume?.technicalSkillsScore || 0, color: '#3b82f6', icon: '⚙️', desc: 'Relevance & depth of skills, tools, and frameworks' },
-                                { key: 'projects',        label: 'Projects',         score: aiResume?.projectsScore || 0,          color: '#8b5cf6', icon: '💻', desc: 'Quality, complexity, quantified impact of projects' },
-                                { key: 'experience',      label: 'Experience',       score: aiResume?.experienceScore || 0,        color: '#10b981', icon: '🏢', desc: 'Internships, co-ops, open-source, achievements' },
-                                { key: 'ats',             label: 'ATS Score',        score: aiResume?.atsScore || 0,               color: '#f59e0b', icon: '🤖', desc: 'Keywords, section headers, formatting, scannability' },
-                                { key: 'clarity',         label: 'Clarity & Impact', score: aiResume?.clarityScore || 0,           color: '#ef4444', icon: '✍️', desc: 'Action verbs, quantification, professional tone' },
+                                { key: 'technicalSkills', label: 'Technical Skills', score: aiResume?.technicalSkillsScore || 0, color: '#3b82f6', icon: 'âš™ï¸', desc: 'Relevance & depth of skills, tools, and frameworks' },
+                                { key: 'projects',        label: 'Projects',         score: aiResume?.projectsScore || 0,          color: '#8b5cf6', icon: 'ðŸ’»', desc: 'Quality, complexity, quantified impact of projects' },
+                                { key: 'experience',      label: 'Experience',       score: aiResume?.experienceScore || 0,        color: '#10b981', icon: 'ðŸ¢', desc: 'Internships, co-ops, open-source, achievements' },
+                                { key: 'ats',             label: 'ATS Score',        score: aiResume?.atsScore || 0,               color: '#f59e0b', icon: 'ðŸ¤–', desc: 'Keywords, section headers, formatting, scannability' },
+                                { key: 'clarity',         label: 'Clarity & Impact', score: aiResume?.clarityScore || 0,           color: '#ef4444', icon: 'âœï¸', desc: 'Action verbs, quantification, professional tone' },
                             ];
                             const scoreColor = resumeScore >= 75 ? '#10b981' : resumeScore >= 55 ? '#f59e0b' : '#ef4444';
                             const scoreLabel = resumeScore >= 75 ? 'Strong' : resumeScore >= 55 ? 'Average' : 'Needs Work';
@@ -220,7 +178,7 @@ const StudentDashboard = () => {
                                         }}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                            <span style={{ fontSize: '1.1rem' }}>✨</span>
+                                            <span style={{ fontSize: '1.1rem' }}>âœ¨</span>
                                             <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>AI Resume Insights</span>
                                             {hasResume && (
                                                 <span style={{
@@ -242,7 +200,7 @@ const StudentDashboard = () => {
 
                                     {!hasResume ? (
                                         <div className="text-center p-8">
-                                            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📄</div>
+                                            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>ðŸ“„</div>
                                             <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Upload your resume to unlock AI-powered ATS analysis.</p>
                                             <Link to="/student/profile" className="btn btn-primary">Upload Resume</Link>
                                         </div>
@@ -269,7 +227,7 @@ const StudentDashboard = () => {
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
                                                         {criteria.map(c => {
                                                             const info = bd[c.key] || {};
-                                                            const grade = info.grade || '—';
+                                                            const grade = info.grade || 'â€”';
                                                             const pct = Math.round((c.score / 20) * 100);
                                                             return (
                                                                 <div key={c.key} style={{
@@ -283,7 +241,7 @@ const StudentDashboard = () => {
                                                                             <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{c.desc}</span>
                                                                         </div>
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                                                                            {grade !== '—' && (
+                                                                            {grade !== 'â€”' && (
                                                                                 <span style={{
                                                                                     fontSize: '0.7rem', fontWeight: 800, padding: '1px 7px',
                                                                                     borderRadius: '6px', background: `${gradeColor(grade)}20`, color: gradeColor(grade)
@@ -315,7 +273,7 @@ const StudentDashboard = () => {
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                                 {(aiResume.strengths || []).map((s, i) => (
                                                                     <div key={i} style={{ display: 'flex', gap: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                                                                        <span style={{ color: '#10b981', fontWeight: 700, flexShrink: 0 }}>✓</span>
+                                                                        <span style={{ color: '#10b981', fontWeight: 700, flexShrink: 0 }}>âœ“</span>
                                                                         <span>{s}</span>
                                                                     </div>
                                                                 ))}
@@ -359,7 +317,7 @@ const StudentDashboard = () => {
                                                     {(aiResume.suggestions || []).length > 0 && (
                                                         <div>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '0.5rem' }}>
-                                                                <span style={{ fontSize: '0.8rem' }}>💡</span>
+                                                                <span style={{ fontSize: '0.8rem' }}>ðŸ’¡</span>
                                                                 <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase' }}>Improvement Tips</span>
                                                             </div>
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -379,7 +337,7 @@ const StudentDashboard = () => {
 
                                                     <div style={{ marginTop: '1rem', textAlign: 'right' }}>
                                                         <Link to="/student/profile" style={{ fontSize: '0.8rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
-                                                            🔄 Re-analyze Resume →
+                                                            ðŸ”„ Re-analyze Resume â†’
                                                         </Link>
                                                     </div>
                                                 </div>
@@ -389,6 +347,18 @@ const StudentDashboard = () => {
                                 </div>
                             );
                         })()}
+                    <div className="card">
+                        <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <h3 className="card-title">AI Career Mentor</h3>
+                            {aiReco && (
+                                <button className="btn btn-sm" style={{ fontSize: '0.75rem', padding: '4px 12px' }} onClick={() => setShowRecoInput(true)}>
+                                    Re-generate Plan
+                                </button>
+                            )}
+                        </div>
+                        {aiReco ? (
+                            <div style={{ padding: '1rem' }}>
+                                <div style={{ marginBottom: '0.75rem' }}>
                                     <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.25rem' }}>Target: {aiReco.targetRole}</h4>
                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{aiReco.overallAssessment}</p>
                                 </div>
@@ -514,7 +484,7 @@ const StudentDashboard = () => {
                                     <>
                                         <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Get a custom study roadmap targeted to your role.</p>
                                         <button className="btn btn-primary" onClick={() => setShowRecoInput(true)} disabled={!hasResume}>
-                                            {hasResume ? '✨ Generate My Plan' : 'Upload resume first'}
+                                            {hasResume ? 'âœ¨ Generate My Plan' : 'Upload resume first'}
                                         </button>
                                     </>
                                 ) : (
@@ -529,7 +499,7 @@ const StudentDashboard = () => {
                                         />
                                         <div className="flex gap-2">
                                             <button className="btn btn-primary flex-1" onClick={handleGetRecommendations} disabled={loadingReco}>
-                                                {loadingReco ? '⏳ AI Thinking…' : '✨ Generate Plan'}
+                                                {loadingReco ? 'â³ AI Thinkingâ€¦' : 'âœ¨ Generate Plan'}
                                             </button>
                                             <button className="btn btn-secondary" onClick={() => setShowRecoInput(false)}>Cancel</button>
                                         </div>
