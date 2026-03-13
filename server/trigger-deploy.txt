@@ -1,0 +1,4 @@
+Deployment trigger with environment variables configured:
+- MONGODB_URI: Connected to MongoDB Atlas
+- JWT_SECRET: Authentication secret configured
+- FRONTEND_URL: CORS configured for frontend

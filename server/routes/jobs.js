@@ -1,0 +1,90 @@
+const express = require('express');
+const router = express.Router();
+const { auth, authorize } = require('../middleware/auth');
+const Job = require('../models/Job');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
+
+// Get all approved jobs (for students)
+router.get('/', auth, async (req, res) => {
+    try {
+        const query = req.user.role === 'admin' ? {} : { status: 'approved', isActive: true };
+        const jobs = await Job.find(query).populate('postedBy', 'name email recruiterProfile').sort('-createdAt');
+        res.json(jobs);
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Get job by id
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const job = await Job.findById(req.params.id).populate('postedBy', 'name email recruiterProfile');
+        if (!job) return res.status(404).json({ error: 'Job not found' });
+        res.json(job);
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Create job posting (recruiter)
+router.post('/', auth, authorize('recruiter'), async (req, res) => {
+    try {
+        const job = new Job({ ...req.body, postedBy: req.user._id, company: req.user.recruiterProfile?.company || req.body.company });
+        await job.save();
+
+        // Notify admin
+        const admins = await User.find({ role: 'admin' });
+        for (const admin of admins) {
+            await new Notification({
+                user: admin._id,
+                title: 'New Job Posting',
+                message: `${req.user.name} posted a new job: ${job.title}`,
+                type: 'info',
+                link: '/admin/jobs'
+            }).save();
+        }
+
+        res.status(201).json(job);
+    } catch (error) {
+        res.status(500).json({ error: 'Error creating job posting' });
+    }
+});
+
+// Update job (recruiter who posted it)
+router.put('/:id', auth, authorize('recruiter'), async (req, res) => {
+    try {
+        const job = await Job.findOne({ _id: req.params.id, postedBy: req.user._id });
+        if (!job) return res.status(404).json({ error: 'Job not found or unauthorized' });
+
+        Object.assign(job, req.body);
+        await job.save();
+        res.json(job);
+    } catch (error) {
+        res.status(500).json({ error: 'Error updating job' });
+    }
+});
+
+// Delete job
+router.delete('/:id', auth, authorize('recruiter', 'admin'), async (req, res) => {
+    try {
+        const query = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, postedBy: req.user._id };
+        const job = await Job.findOneAndDelete(query);
+        if (!job) return res.status(404).json({ error: 'Job not found or unauthorized' });
+        res.json({ message: 'Job deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error deleting job' });
+    }
+});
+
+// Get jobs posted by recruiter
+router.get('/recruiter/my-jobs', auth, authorize('recruiter'), async (req, res) => {
+    try {
+        const jobs = await Job.find({ postedBy: req.user._id }).sort('-createdAt');
+        res.json(jobs);
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+module.exports = router;

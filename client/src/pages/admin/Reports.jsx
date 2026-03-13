@@ -1,0 +1,200 @@
+import { useState, useEffect } from 'react';
+import Layout from '../../components/Layout';
+import { adminAPI } from '../../services/api';
+
+const AdminReports = () => {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => { adminAPI.getReports().then(res => setData(res.data)).catch(() => { }).finally(() => setLoading(false)); }, []);
+
+    const handleSeedData = async () => {
+        if (!window.confirm('This will add dummy placement drives, announcements, and job applications for demonstration. Proceed?')) return;
+        try {
+            setLoading(true);
+            await adminAPI.seedDemoData();
+            const res = await adminAPI.getReports();
+            setData(res.data);
+            alert('Demo data seeded successfully! Dashboard updated.');
+        } catch (error) {
+            alert('Error seeding demo data: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const exportToCSV = () => {
+        if (!data) return;
+
+        const lines = [];
+
+        // --- Section 1: Placement Summary ---
+        lines.push("--- PLACEMENT SUMMARY ---");
+        lines.push("Branch,Total Students,Placed Students,Placement Rate (%)");
+        (data.branchStats || []).forEach(b => {
+            lines.push(`${b._id || 'N/A'},${b.total},${b.placed},${Math.round((b.placed / Math.max(b.total, 1)) * 100)}%`);
+        });
+        lines.push("\n");
+
+        // --- Section 2: Student Master List ---
+        lines.push("--- STUDENT MASTER LIST ---");
+        lines.push("Name,Email,Department,CGPA,Status,Placement Company,Applications Sent");
+        (data.studentDetails || []).forEach(s => {
+            lines.push(`"${s.name}","${s.email}","${s.studentProfile?.department || 'N/A'}",${s.studentProfile?.cgpa || 0},${s.status},"${s.placedAt || 'N/A'}",${s.applicationCount || 0}`);
+        });
+        lines.push("\n");
+
+        // --- Section 3: Recruiter Performance ---
+        lines.push("--- RECRUITER PERFORMANCE ---");
+        lines.push("Name,Email,Company,Jobs Posted,Successful Hires");
+        (data.recruiterDetails || []).forEach(r => {
+            lines.push(`"${r.name}","${r.email}","${r.company || 'N/A'}",${r.jobsPosted || 0},${r.totalHires || 0}`);
+        });
+
+        const csvContent = "data:text/csv;charset=utf-8," + lines.join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `detailed_placement_report_${new Date().toLocaleDateString()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    if (loading) return <Layout title="Reports"><div className="loading"><div className="spinner"></div></div></Layout>;
+    if (!data) return <Layout title="Reports"><p>Error loading reports</p></Layout>;
+
+    const maxBranch = Math.max(...(data.branchStats || []).map(b => b.total), 1);
+    const maxCompany = Math.max(...(data.companyStats || []).map(c => c.count), 1);
+
+    return (
+        <Layout title="Analytics & Reports">
+            <div className="fade-in">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
+                    <p style={{ color: 'var(--text-muted)', margin: 0, flex: 1 }}>Comprehensive placement analytics and performance tracking.</p>
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <button className="btn btn-secondary btn-sm" onClick={handleSeedData}>🚀 Seed Demo Data</button>
+                        <button className="btn btn-primary btn-sm" onClick={exportToCSV}>📥 Export Placement Data (CSV)</button>
+                    </div>
+                </div>
+
+                {/* Overview Row */}
+                <div className="stats-grid">
+                    <div className="stat-card"><div className="stat-icon blue"><span>👥</span></div><div className="stat-info"><h3>{data.overview.totalStudents}</h3><p>Total Students</p></div></div>
+                    <div className="stat-card"><div className="stat-icon green"><span>✅</span></div><div className="stat-info"><h3>{data.overview.placedStudents}</h3><p>Placed</p></div></div>
+                    <div className="stat-card"><div className="stat-icon orange"><span>⏳</span></div><div className="stat-info"><h3>{data.overview.unplacedStudents}</h3><p>Unplaced</p></div></div>
+                    <div className="stat-card"><div className="stat-icon cyan"><span>💼</span></div><div className="stat-info"><h3>{data.overview.approvedJobs}</h3><p>Active Jobs</p></div></div>
+                    <div className="stat-card"><div className="stat-icon red"><span>📋</span></div><div className="stat-info"><h3>{data.overview.totalApplications}</h3><p>Applications</p></div></div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(var(--chart-min, 300px), 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
+                    {/* Placement Ratio Circular Chart */}
+                    <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '350px' }}>
+                        <h3 className="card-title" style={{ alignSelf: 'flex-start', marginBottom: '2rem' }}>Overall Placement Ratio</h3>
+                        <div style={{ position: 'relative', width: '220px', height: '220px' }}>
+                            <div style={{
+                                width: '100%', height: '100%', borderRadius: '50%',
+                                background: `conic-gradient(var(--success) ${(data.overview.placedStudents / Math.max(data.overview.totalStudents, 1)) * 360}deg, var(--bg-body) 0deg)`,
+                                border: '4px solid var(--border)',
+                                boxShadow: '0 0 20px var(--success-glow)'
+                            }}></div>
+                            <div style={{
+                                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                                width: '160px', height: '160px', borderRadius: '50%', background: 'var(--bg-card)',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                border: '1px solid var(--border)'
+                            }}>
+                                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--success)' }}>
+                                    {Math.round((data.overview.placedStudents / Math.max(data.overview.totalStudents, 1)) * 100)}%
+                                </span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Placed</span>
+                            </div>
+                        </div>
+                        <div style={{ marginTop: '2rem', display: 'flex', gap: '2rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div style={{ width: '12px', height: '12px', background: 'var(--success)', borderRadius: '2px' }}></div>
+                                <span style={{ fontSize: '0.9rem' }}>Placed ({data.overview.placedStudents})</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div style={{ width: '12px', height: '12px', background: 'var(--bg-body)', borderRadius: '2px', border: '1px solid var(--border)' }}></div>
+                                <span style={{ fontSize: '0.9rem' }}>Unplaced ({data.overview.unplacedStudents})</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Branch-wise Bar Chart */}
+                    <div className="card" style={{ minHeight: '350px' }}>
+                        <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Branch wise Distribution</h3>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: '240px', paddingTop: '2rem' }}>
+                            {data.branchStats.map((b, i) => (
+                                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '50px' }}>
+                                    <div style={{ marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: 600 }}>{b.total}</div>
+                                    <div style={{
+                                        height: `${(b.total / maxBranch) * 160}px`,
+                                        width: '30px',
+                                        background: 'linear-gradient(180deg, var(--primary), var(--secondary))',
+                                        borderRadius: '6px 6px 0 0',
+                                        position: 'relative'
+                                    }}>
+                                        <div style={{
+                                            position: 'absolute', bottom: 0, width: '100%',
+                                            height: `${(b.placed / Math.max(b.total, 1)) * 100}%`,
+                                            background: 'var(--success)',
+                                            borderRadius: '2px 2px 0 0',
+                                            opacity: 0.8
+                                        }} title={`Placed: ${b.placed}`}></div>
+                                    </div>
+                                    <div style={{
+                                        marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--text-muted)',
+                                        textAlign: 'center', writingMode: 'vertical-rl', height: '60px', transform: 'rotate(180deg)'
+                                    }}>{b._id || 'Unknown'}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
+                    {/* Top Companies */}
+                    <div className="card">
+                        <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Top Recruiting Companies</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            {data.companyStats.slice(0, 5).map((c, i) => (
+                                <div key={i}>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{c._id || 'Standard Hire'}</span>
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{c.count} Hires</span>
+                                    </div>
+                                    <div style={{ height: '8px', background: 'var(--bg-body)', borderRadius: '10px', overflow: 'hidden' }}>
+                                        <div style={{ height: '100%', width: `${(c.count / maxCompany) * 100}%`, background: 'var(--primary)', borderRadius: '10px' }}></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Application Funnel */}
+                    <div className="card">
+                        <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Application Funnel</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {data.applicationStats.map((s, i) => (
+                                <div key={i} style={{
+                                    padding: '1rem', background: 'var(--bg-body)', borderRadius: '10px',
+                                    border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{s._id}</div>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{s.count}</div>
+                                    </div>
+                                    <div style={{ fontSize: '2rem', opacity: 0.1 }}>📄</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Layout>
+    );
+};
+
+export default AdminReports;
