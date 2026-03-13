@@ -31,19 +31,35 @@ PlacePrep centralizes the university placement process—moving away from scatte
 
 ### Frontpage
 
-![Frontpage](https://image.thum.io/get/width/1400/crop/800/noanimate/https://university-placement-portal-seven.vercel.app/)
+![Frontpage](docs/assets/screenshots/image-1773444236120.png)
+
+### Register Page
+
+![Register Page](docs/assets/screenshots/image-1773444246079.png)
+
+### Login Page
+
+![Login Page](docs/assets/screenshots/image-1773444276609.png)
 
 ### Student Dashboard
 
-![Student Dashboard](https://image.thum.io/get/width/1400/crop/800/noanimate/https://university-placement-portal-seven.vercel.app/student/dashboard)
+![Student Dashboard](docs/assets/screenshots/image-1773444298648.png)
+
+### Mock Test Hub
+
+![Mock Test Hub](docs/assets/screenshots/image-1773444306883.png)
 
 ### Interview Prep Feature
 
-![Interview Preparation](https://image.thum.io/get/width/1400/crop/800/noanimate/https://university-placement-portal-seven.vercel.app/student/interview-tips)
+![Interview Preparation](docs/assets/screenshots/image-1773444313032.png)
+
+### Job Listings
+
+![Job Listings](docs/assets/screenshots/image-1773444320077.png)
 
 ### Admin Analytics
 
-![Admin Reports](https://image.thum.io/get/width/1400/crop/800/noanimate/https://university-placement-portal-seven.vercel.app/admin/reports)
+![Admin Reports](docs/assets/screenshots/image-1773444325863.png)
 
 ---
 
