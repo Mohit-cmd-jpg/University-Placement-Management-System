@@ -78,13 +78,13 @@ router.post('/resume', auth, authorize('student'), upload.single('resume'), asyn
             // Update latest on User profile
             await User.findByIdAndUpdate(req.user._id, {
                 'studentProfile.aiResumeAnalysis': {
-                    // New per-category scores
                     resumeScore: analysis.resumeScore,
                     technicalSkillsScore: analysis.technicalSkillsScore,
                     projectsScore: analysis.projectsScore,
                     experienceScore: analysis.experienceScore,
                     atsScore: analysis.atsScore,
                     clarityScore: analysis.clarityScore,
+                    criteriaBreakdown: analysis.criteriaBreakdown || {},
                     strengths: analysis.strengths,
                     weaknesses: analysis.weaknesses,
                     missingSkills: analysis.missingSkills,

@@ -43,6 +43,8 @@ const userSchema = new mongoose.Schema({
             weaknesses: [String],
             missingSkills: [String],
             suggestions: [String],
+            // Per-criteria breakdown with grade + notes per category
+            criteriaBreakdown: { type: Object, default: {} },
             // Legacy fields (kept for compatibility)
             score: { type: Number, default: 0 },
             summary: String,
