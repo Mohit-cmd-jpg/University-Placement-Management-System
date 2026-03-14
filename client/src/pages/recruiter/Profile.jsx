@@ -76,7 +76,7 @@ const RecruiterProfile = () => {
                             <div className="form-group">
                                 <label>Mobile Number</label>
                                 <div className="form-row" style={{ margin: 0 }}>
-                                    <div className="form-group" style={{ flex: '0 0 120px', marginBottom: 0 }}>
+                                    <div className="form-group" style={{ flex: '0 0 88px', marginBottom: 0 }}>
                                         <input name="phoneCountryCode" value={form.phoneCountryCode} onChange={handleChange} placeholder="+91" required />
                                     </div>
                                     <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>

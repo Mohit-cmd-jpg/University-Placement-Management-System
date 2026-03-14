@@ -28,8 +28,6 @@ const getStudentChecks = (user) => {
         { label: '12th Percentage', ok: Number.isFinite(Number(sp.twelfthPercentage)) && String(sp.twelfthPercentage) !== '' },
         { label: 'LinkedIn', ok: isFilled(sp.linkedIn) },
         { label: 'GitHub', ok: isFilled(sp.github) },
-        { label: 'Portfolio', ok: isFilled(sp.portfolio) },
-        { label: 'Address', ok: isFilled(sp.address) },
         { label: 'Resume', ok: isFilled(sp.resumeUrl) || isFilled(sp.resumeBase64) },
     ];
 };

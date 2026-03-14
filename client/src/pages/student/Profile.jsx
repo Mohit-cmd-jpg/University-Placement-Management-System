@@ -119,7 +119,7 @@ const StudentProfile = () => {
                             <div className="form-group">
                                 <label>Mobile Number</label>
                                 <div className="form-row" style={{ margin: 0 }}>
-                                    <div className="form-group" style={{ flex: '0 0 120px', marginBottom: 0 }}>
+                                    <div className="form-group" style={{ flex: '0 0 88px', marginBottom: 0 }}>
                                         <input name="phoneCountryCode" value={form.phoneCountryCode} onChange={handleChange} placeholder="+91" required />
                                     </div>
                                     <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
@@ -142,8 +142,8 @@ const StudentProfile = () => {
                             <div className="form-group"><label>LinkedIn</label><input name="linkedIn" value={form.linkedIn} onChange={handleChange} required /></div>
                             <div className="form-group"><label>GitHub</label><input name="github" value={form.github} onChange={handleChange} required /></div>
                         </div>
-                        <div className="form-group"><label>Portfolio</label><input name="portfolio" value={form.portfolio} onChange={handleChange} required /></div>
-                        <div className="form-group"><label>Address</label><textarea name="address" value={form.address} onChange={handleChange} rows="2" required /></div>
+                        <div className="form-group"><label>Portfolio (optional)</label><input name="portfolio" value={form.portfolio} onChange={handleChange} /></div>
+                        <div className="form-group"><label>Address (optional)</label><textarea name="address" value={form.address} onChange={handleChange} rows="2" /></div>
                         {/* Resume Section integrated into the form layout */}
                         <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', marginBottom: '2rem' }}>
                             <h3 style={{ marginBottom: '1rem' }}>Resume</h3>

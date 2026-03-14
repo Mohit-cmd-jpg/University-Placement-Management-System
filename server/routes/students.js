@@ -54,8 +54,6 @@ router.put('/profile', auth, authorize('student'), async (req, res) => {
         if (!Number.isFinite(Number(mergedProfile.twelfthPercentage)) || String(mergedProfile.twelfthPercentage) === '') missingFields.push('12th percentage');
         if (!String(mergedProfile.linkedIn || '').trim()) missingFields.push('linkedin');
         if (!String(mergedProfile.github || '').trim()) missingFields.push('github');
-        if (!String(mergedProfile.portfolio || '').trim()) missingFields.push('portfolio');
-        if (!String(mergedProfile.address || '').trim()) missingFields.push('address');
         const hasResume = Boolean(String(mergedProfile.resumeUrl || '').trim()) || Boolean(String(mergedProfile.resumeBase64 || '').trim());
         if (!hasResume) missingFields.push('resume');
 
