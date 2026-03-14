@@ -11,8 +11,7 @@ const InterviewTips = () => {
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(null);
-    const [answers, setAnswers] = useState({}); // format: { questionIndex: { plaintext: '...', javascript: '...' } }
-    const [answer, setAnswer] = useState(''); // active view string, kept for legacy UI binding if needed
+    const [answers, setAnswers] = useState({}); // format: { questionId: { plaintext: '...', javascript: '...' } }
     const [evaluating, setEvaluating] = useState(false);
     const [evaluation, setEvaluation] = useState(null);
     const [language, setLanguage] = useState('plaintext');
@@ -38,10 +37,16 @@ const InterviewTips = () => {
         });
     };
 
+    const activeQuestion = currentQuestionIndex !== null ? questions[currentQuestionIndex] : null;
+    const activeQuestionKey = activeQuestion?._id || null;
+    const activeAnswer = activeQuestionKey ? ((answers[activeQuestionKey] && answers[activeQuestionKey][language]) || '') : '';
+
     const generateQuestions = async () => {
         setLoading(true);
         setEvaluation(null);
         setCurrentQuestionIndex(null);
+        setLanguage('plaintext');
+        setAnswers({});
         try {
             const types = Object.entries(questionTypes).filter(([, v]) => v).map(([k]) => k);
             const res = await prepAPI.getInterviewQuestions(role, questionCount, types);
@@ -56,7 +61,7 @@ const InterviewTips = () => {
     };
 
     const submitAnswer = async () => {
-        const activeCode = (answers[currentQuestionIndex] && answers[currentQuestionIndex][language]) || '';
+        const activeCode = activeAnswer;
         if (!activeCode.trim()) return toast.error('Please provide an answer');
         setEvaluating(true);
         try {
@@ -80,17 +85,36 @@ const InterviewTips = () => {
         setCurrentQuestionIndex(prev => prev + 1);
     };
 
+    const endSession = () => {
+        setQuestions([]);
+        setCurrentQuestionIndex(null);
+        setEvaluation(null);
+        setLanguage('plaintext');
+        setAnswers({});
+    };
+
     const handleSkipQuestion = () => {
         if (evaluating) return;
         if (currentQuestionIndex < questions.length - 1) {
             nextQuestion();
             return;
         }
-        setQuestions([]);
+        endSession();
+    };
+
+    const clearCurrentAnswer = () => {
+        if (!activeQuestionKey) return;
+        setAnswers(prev => ({
+            ...prev,
+            [activeQuestionKey]: {
+                ...(prev[activeQuestionKey] || {}),
+                [language]: ''
+            }
+        }));
     };
 
     return (
-        <Layout title="AI Interview Preparation">
+        <Layout title="AI Interview Prep">
             <div className="fade-in">
                 {!questions.length ? (
                     <div className="card text-center fade-in" style={{
@@ -277,7 +301,7 @@ const InterviewTips = () => {
                                     Progress: {currentQuestionIndex + 1} / {questions.length}
                                 </div>
                             </div>
-                            <button onClick={() => setQuestions([])} className="btn-text" style={{ color: 'var(--danger)', fontWeight: 700, opacity: 0.8 }}>End Session</button>
+                            <button onClick={endSession} className="btn-text" style={{ color: 'var(--danger)', fontWeight: 700, opacity: 0.8 }}>End Session</button>
                         </div>
 
                         <div className="card mb-3" style={{
@@ -349,13 +373,13 @@ const InterviewTips = () => {
                                 }}>
                                     {language === 'plaintext' ? (
                                         <textarea
-                                            value={(answers[currentQuestionIndex] && answers[currentQuestionIndex][language]) || ''}
+                                            value={activeAnswer}
                                             onChange={(e) => {
                                                 const val = e.target.value;
                                                 setAnswers(prev => ({
                                                     ...prev,
-                                                    [currentQuestionIndex]: {
-                                                        ...(prev[currentQuestionIndex] || {}),
+                                                    [activeQuestionKey]: {
+                                                        ...(prev[activeQuestionKey] || {}),
                                                         [language]: val
                                                     }
                                                 }));
@@ -381,12 +405,12 @@ const InterviewTips = () => {
                                             width="100%"
                                             language={language === 'csharp' ? 'csharp' : language === 'cpp' ? 'cpp' : language}
                                             theme="vs-dark"
-                                            value={(answers[currentQuestionIndex] && answers[currentQuestionIndex][language]) || "// Write your technical solution here..."}
+                                            value={activeAnswer}
                                             onChange={(val) => {
                                                 setAnswers(prev => ({
                                                     ...prev,
-                                                    [currentQuestionIndex]: {
-                                                        ...(prev[currentQuestionIndex] || {}),
+                                                    [activeQuestionKey]: {
+                                                        ...(prev[activeQuestionKey] || {}),
                                                         [language]: val
                                                     }
                                                 }));
@@ -405,8 +429,16 @@ const InterviewTips = () => {
                                 </div>
                                 <div className="flex gap-1.5 mt-2">
                                     <button
+                                        onClick={clearCurrentAnswer}
+                                        disabled={evaluating || !activeAnswer.trim()}
+                                        className="btn btn-secondary"
+                                        style={{ padding: '1.25rem 1.4rem', fontWeight: 800, borderRadius: '18px', whiteSpace: 'nowrap' }}
+                                    >
+                                        Clear Answer
+                                    </button>
+                                    <button
                                         onClick={submitAnswer}
-                                        disabled={evaluating || evaluation || !((answers[currentQuestionIndex] && answers[currentQuestionIndex][language]) || '').trim()}
+                                        disabled={evaluating || evaluation || !activeAnswer.trim()}
                                         className="btn btn-primary"
                                         style={{ flex: 1, padding: '1.25rem', fontWeight: 800, fontSize: '1.2rem', borderRadius: '18px', boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)' }}
                                     >
@@ -529,7 +561,7 @@ const InterviewTips = () => {
                                                     Next Question →
                                                 </button>
                                             ) : (
-                                                <button onClick={() => setQuestions([])} className="btn btn-success w-100" style={{ padding: '1rem', borderRadius: '16px', fontWeight: 800, fontSize: '1rem', background: '#10b981' }}>
+                                                <button onClick={endSession} className="btn btn-success w-100" style={{ padding: '1rem', borderRadius: '16px', fontWeight: 800, fontSize: '1rem', background: '#10b981' }}>
                                                     Finish Interview
                                                 </button>
                                             )}
