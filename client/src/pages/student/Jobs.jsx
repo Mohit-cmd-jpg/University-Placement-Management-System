@@ -3,8 +3,12 @@ import Layout from '../../components/Layout';
 import { jobAPI, applicationAPI } from '../../services/api';
 import { FiMapPin, FiClock, FiDollarSign, FiUsers } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const StudentJobs = () => {
+    const { user } = useAuth();
+    const navigate = useNavigate();
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedJob, setSelectedJob] = useState(null);
@@ -22,7 +26,38 @@ const StudentJobs = () => {
         } catch { } finally { setLoading(false); }
     };
 
+    const getMissingProfileFields = () => {
+        const profile = user?.studentProfile || {};
+        const missing = [];
+        const skills = Array.isArray(profile.skills)
+            ? profile.skills.filter((s) => String(s || '').trim())
+            : String(profile.skills || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+
+        if (!String(user?.name || '').trim()) missing.push('name');
+        if (!String(profile.rollNumber || '').trim()) missing.push('roll number');
+        if (skills.length === 0) missing.push('tech stack');
+        if (!String(profile.resumeUrl || '').trim()) missing.push('resume');
+        return missing;
+    };
+
+    const isEligibleToApply = getMissingProfileFields().length === 0;
+
+    const showProfileRequiredMessage = () => {
+        const missing = getMissingProfileFields();
+        if (missing.length === 0) return;
+        toast.error(`Complete profile before applying. Missing: ${missing.join(', ')}`);
+    };
+
     const handleApply = async (jobId) => {
+        const missing = getMissingProfileFields();
+        if (missing.length > 0) {
+            toast.error(`Complete profile before applying. Missing: ${missing.join(', ')}`);
+            return;
+        }
+
         setApplying(true);
         try {
             await applicationAPI.apply({ jobId, coverLetter });
@@ -39,6 +74,17 @@ const StudentJobs = () => {
     return (
         <Layout title="Job Listings">
             <div className="fade-in">
+                {!isEligibleToApply && (
+                    <div className="card" style={{ marginBottom: '1rem', border: '1px solid #f59e0b', background: '#fffbeb' }}>
+                        <p style={{ margin: 0, color: '#92400e', fontSize: '0.9rem' }}>
+                            Complete required profile details before applying: <strong>{getMissingProfileFields().join(', ')}</strong>.
+                        </p>
+                        <div style={{ marginTop: '0.75rem' }}>
+                            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/student/profile')}>Go to Profile</button>
+                        </div>
+                    </div>
+                )}
+
                 <div className="jobs-grid" style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(var(--mobile-job-min, 300px), 1fr))',
@@ -73,7 +119,20 @@ const StudentJobs = () => {
                                         {appliedJobs.includes(job._id) ? (
                                             <span className="btn btn-success btn-sm flex-1 disabled" style={{ opacity: 0.8 }}>✓ Applied</span>
                                         ) : (
-                                            <button className="btn btn-primary btn-sm flex-1" onClick={() => setSelectedJob(job)}>Apply</button>
+                                            <button
+                                                className="btn btn-primary btn-sm flex-1"
+                                                onClick={() => {
+                                                    if (!isEligibleToApply) {
+                                                        showProfileRequiredMessage();
+                                                        return;
+                                                    }
+                                                    setSelectedJob(job);
+                                                }}
+                                                disabled={!isEligibleToApply}
+                                                title={!isEligibleToApply ? `Missing: ${getMissingProfileFields().join(', ')}` : 'Apply'}
+                                            >
+                                                Apply
+                                            </button>
                                         )}
                                         <button className="btn btn-secondary btn-sm" onClick={() => setSelectedJob({ ...job, viewOnly: true })}>Details</button>
                                     </div>
@@ -116,7 +175,7 @@ const StudentJobs = () => {
                             <div className="modal-actions">
                                 <button className="btn btn-secondary" onClick={() => setSelectedJob(null)}>Close</button>
                                 {!selectedJob.viewOnly && !appliedJobs.includes(selectedJob._id) && (
-                                    <button className="btn btn-primary" onClick={() => handleApply(selectedJob._id)} disabled={applying}>
+                                    <button className="btn btn-primary" onClick={() => handleApply(selectedJob._id)} disabled={applying || !isEligibleToApply}>
                                         {applying ? 'Submitting...' : 'Submit Application'}
                                     </button>
                                 )}

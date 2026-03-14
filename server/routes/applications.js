@@ -10,6 +10,31 @@ router.post('/', auth, authorize('student'), async (req, res) => {
     try {
         const { jobId, coverLetter } = req.body;
 
+        const profile = req.user.studentProfile || {};
+        const normalizedSkills = Array.isArray(profile.skills)
+            ? profile.skills.filter((s) => String(s || '').trim())
+            : String(profile.skills || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+
+        const missingFields = [];
+        if (!String(req.user.name || '').trim()) missingFields.push('name');
+        if (!String(profile.rollNumber || '').trim()) missingFields.push('roll number');
+        if (normalizedSkills.length === 0) missingFields.push('tech stack (skills)');
+        const hasResumeUrl = Boolean(String(profile.resumeUrl || '').trim());
+        const hasResumeBlob = Boolean(String(profile.resumeBase64 || '').trim());
+        if (!hasResumeUrl && !hasResumeBlob) missingFields.push('resume');
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({
+                error: `Complete your profile before applying. Missing: ${missingFields.join(', ')}.`,
+                missingFields,
+                profileRequired: true,
+                profilePath: '/student/profile'
+            });
+        }
+
         const job = await Job.findById(jobId);
         if (!job) return res.status(404).json({ error: 'Job not found' });
         if (job.status !== 'approved') return res.status(400).json({ error: 'Job is not approved for applications' });
@@ -21,7 +46,7 @@ router.post('/', auth, authorize('student'), async (req, res) => {
             job: jobId,
             student: req.user._id,
             coverLetter,
-            resumeUrl: req.user.studentProfile?.resumeUrl
+            resumeUrl: profile.resumeUrl
         });
         await application.save();
 
