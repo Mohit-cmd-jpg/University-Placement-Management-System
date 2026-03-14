@@ -53,6 +53,45 @@ const Navbar = ({ title }) => {
         } catch { }
     };
 
+    const resolveNotificationRoute = (notification) => {
+        if (notification?.link) return notification.link;
+
+        const text = `${notification?.title || ''} ${notification?.message || ''}`.toLowerCase();
+
+        if (user?.role === 'student') {
+            if (text.includes('job')) return '/student/jobs';
+            if (text.includes('application')) return '/student/applications';
+            if (text.includes('profile')) return '/student/profile';
+            if (text.includes('interview') || text.includes('prep')) return '/student/preparation/tips';
+            return '/student/notifications';
+        }
+
+        if (user?.role === 'recruiter') {
+            if (text.includes('application') || text.includes('job')) return '/recruiter/my-jobs';
+            if (text.includes('profile') || text.includes('approval')) return '/recruiter/profile';
+            return '/recruiter/notifications';
+        }
+
+        if (user?.role === 'admin') {
+            if (text.includes('job')) return '/admin/jobs';
+            if (text.includes('report') || text.includes('shortlisted')) return '/admin/reports';
+            if (text.includes('student')) return '/admin/students';
+            if (text.includes('recruiter')) return '/admin/recruiters';
+            if (text.includes('announcement')) return '/admin/announcements';
+            return '/admin/notifications';
+        }
+
+        return '/';
+    };
+
+    const handleNotificationClick = async (notification) => {
+        if (!notification.isRead) {
+            await markAsRead(notification._id);
+        }
+        setShowDropdown(false);
+        navigate(resolveNotificationRoute(notification));
+    };
+
     const timeAgo = (date) => {
         const seconds = Math.floor((new Date() - new Date(date)) / 1000);
         if (seconds < 60) return 'just now';
@@ -85,7 +124,7 @@ const Navbar = ({ title }) => {
                                 <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No notifications</div>
                             ) : (
                                 notifications.map((n) => (
-                                    <div key={n._id} className={`notification-item ${!n.isRead ? 'unread' : ''}`} onClick={() => markAsRead(n._id)}>
+                                    <div key={n._id} className={`notification-item ${!n.isRead ? 'unread' : ''}`} onClick={() => handleNotificationClick(n)}>
                                         <h4>{n.title}</h4>
                                         <p>{n.message}</p>
                                         <div className="time">{timeAgo(n.createdAt)}</div>

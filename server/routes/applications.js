@@ -55,7 +55,8 @@ router.post('/', auth, authorize('student'), async (req, res) => {
             user: job.postedBy,
             title: 'New Application',
             message: `${req.user.name} applied for ${job.title}`,
-            type: 'application'
+            type: 'application',
+            link: '/recruiter/my-jobs'
         }).save();
 
         res.status(201).json(application);
@@ -235,7 +236,8 @@ router.put('/:id/status', auth, authorize('recruiter', 'admin'), async (req, res
             user: application.student,
             title: 'Application Update',
             message: `Your application for ${application.job.title} has been ${status}`,
-            type: status === 'selected' ? 'success' : status === 'rejected' ? 'warning' : 'info'
+            type: status === 'selected' ? 'success' : status === 'rejected' ? 'warning' : 'info',
+            link: '/student/applications'
         }).save();
 
         // Automate Student Placement Status

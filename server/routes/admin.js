@@ -24,7 +24,8 @@ router.put('/students/:id/verify', auth, authorize('admin'), async (req, res) =>
             user: student._id,
             title: 'Profile Verification',
             message: req.body.isVerified ? 'Your profile has been verified!' : 'Your profile verification has been revoked.',
-            type: req.body.isVerified ? 'success' : 'warning'
+            type: req.body.isVerified ? 'success' : 'warning',
+            link: '/student/profile'
         }).save();
 
         res.json(student);
@@ -49,7 +50,8 @@ router.put('/recruiters/:id/verify', auth, authorize('admin'), async (req, res) 
             user: recruiter._id,
             title: 'Account Approval Status',
             message: req.body.isApprovedByAdmin ? 'Your recruiter account has been approved by the Admin! You can now log in and post jobs.' : 'Your recruiter account approval has been revoked.',
-            type: req.body.isApprovedByAdmin ? 'success' : 'warning'
+            type: req.body.isApprovedByAdmin ? 'success' : 'warning',
+            link: '/recruiter/dashboard'
         }).save();
 
         res.json(recruiter);
@@ -119,7 +121,8 @@ router.put('/jobs/:id/status', auth, authorize('admin'), async (req, res) => {
             user: job.postedBy,
             title: `Job ${status.charAt(0).toUpperCase() + status.slice(1)}`,
             message: `Your job posting "${job.title}" has been ${status}`,
-            type: status === 'approved' ? 'success' : 'warning'
+            type: status === 'approved' ? 'success' : 'warning',
+            link: '/recruiter/my-jobs'
         }).save();
 
         // If approved, notify all students
@@ -130,7 +133,8 @@ router.put('/jobs/:id/status', auth, authorize('admin'), async (req, res) => {
                     user: student._id,
                     title: 'New Job Available',
                     message: `New job posted: ${job.title} at ${job.company}`,
-                    type: 'info'
+                    type: 'info',
+                    link: '/student/jobs'
                 }).save();
             }
         }
@@ -206,11 +210,13 @@ router.post('/announcements', auth, authorize('admin'), async (req, res) => {
 
         const users = await User.find(query);
         for (const user of users) {
+            const announcementLink = user.role === 'admin' ? '/admin/announcements' : `/${user.role}/dashboard`;
             await new Notification({
                 user: user._id,
                 title: 'New Announcement',
                 message: req.body.title,
-                type: 'announcement'
+                type: 'announcement',
+                link: announcementLink
             }).save();
         }
 
