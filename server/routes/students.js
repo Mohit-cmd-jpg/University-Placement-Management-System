@@ -30,6 +30,47 @@ router.put('/profile', auth, authorize('student'), async (req, res) => {
         }
 
         const mergedProfile = { ...(existing.studentProfile || {}), ...profileUpdates };
+        const normalizedSkills = Array.isArray(mergedProfile.skills)
+            ? mergedProfile.skills.map((s) => String(s || '').trim()).filter(Boolean)
+            : String(mergedProfile.skills || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+
+        const phoneDigits = String(mergedProfile.phone || '').replace(/\D/g, '');
+        const phoneCountryCode = String(mergedProfile.phoneCountryCode || '').trim();
+        const missingFields = [];
+
+        if (!String(name || existing.name || '').trim()) missingFields.push('name');
+        if (!String(mergedProfile.rollNumber || '').trim()) missingFields.push('roll number');
+        if (!String(mergedProfile.department || '').trim()) missingFields.push('department');
+        if (!String(mergedProfile.batch || '').trim()) missingFields.push('batch');
+        if (!Number.isFinite(Number(mergedProfile.cgpa)) || String(mergedProfile.cgpa) === '') missingFields.push('cgpa');
+        if (!/^\+\d{1,4}$/.test(phoneCountryCode)) missingFields.push('phone country code');
+        if (!/^\d{10}$/.test(phoneDigits)) missingFields.push('phone (10 digits)');
+        if (!String(mergedProfile.gender || '').trim()) missingFields.push('gender');
+        if (normalizedSkills.length === 0) missingFields.push('skills');
+        if (!Number.isFinite(Number(mergedProfile.tenthPercentage)) || String(mergedProfile.tenthPercentage) === '') missingFields.push('10th percentage');
+        if (!Number.isFinite(Number(mergedProfile.twelfthPercentage)) || String(mergedProfile.twelfthPercentage) === '') missingFields.push('12th percentage');
+        if (!String(mergedProfile.linkedIn || '').trim()) missingFields.push('linkedin');
+        if (!String(mergedProfile.github || '').trim()) missingFields.push('github');
+        if (!String(mergedProfile.portfolio || '').trim()) missingFields.push('portfolio');
+        if (!String(mergedProfile.address || '').trim()) missingFields.push('address');
+        const hasResume = Boolean(String(mergedProfile.resumeUrl || '').trim()) || Boolean(String(mergedProfile.resumeBase64 || '').trim());
+        if (!hasResume) missingFields.push('resume');
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({
+                error: `Complete all required profile fields before saving. Missing: ${missingFields.join(', ')}.`,
+                missingFields,
+                profileRequired: true
+            });
+        }
+
+        mergedProfile.skills = normalizedSkills;
+        mergedProfile.phone = phoneDigits;
+        mergedProfile.phoneCountryCode = phoneCountryCode;
+
         const student = await User.findByIdAndUpdate(
             req.user._id,
             { $set: { studentProfile: mergedProfile, ...(name ? { name } : {}) } },

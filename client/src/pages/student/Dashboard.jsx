@@ -5,6 +5,7 @@ import { jobAPI, applicationAPI, notificationAPI, studentAPI, FILE_BASE_URL } fr
 import { Link, useNavigate } from 'react-router-dom';
 import { FiBriefcase, FiFileText, FiCheckCircle, FiBell, FiBook, FiTarget, FiCpu, FiChevronDown, FiChevronUp, FiAlertCircle, FiAward, FiTag } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { getProfileCompletion } from '../../services/profileCompletion';
 
 const CustomCheckbox = ({ checked, onChange, color = 'var(--primary)' }) => (
     <div
@@ -52,6 +53,7 @@ const StudentDashboard = () => {
     const [showRecoInput, setShowRecoInput] = useState(false);
     const [openPhase, setOpenPhase] = useState(0);
     const [insightOpen, setInsightOpen] = useState(false);
+    const [showProfilePopup, setShowProfilePopup] = useState(true);
 
     useEffect(() => { loadData(); }, []);
 
@@ -109,6 +111,7 @@ const StudentDashboard = () => {
     };
 
     const aiResume = user?.studentProfile?.aiResumeAnalysis;
+    const profileCompletion = getProfileCompletion(user);
     const aiReco = user?.studentProfile?.aiRecommendations;
     const roadmap = Array.isArray(aiReco?.roadmap) ? aiReco.roadmap : [];
     const hasResume = aiResume?.resumeScore > 0 || aiResume?.score > 0;
@@ -132,6 +135,29 @@ const StudentDashboard = () => {
                         {user?.isVerified ? 'Profile verified' : 'Profile verification pending'}
                     </p>
                 </header>
+
+                {!profileCompletion.isComplete && showProfilePopup && (
+                    <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--warning)', background: 'linear-gradient(90deg, rgba(245,158,11,0.08), transparent 55%)' }}>
+                        <div className="flex justify-between items-center" style={{ gap: '1rem', alignItems: 'flex-start' }}>
+                            <div style={{ width: '100%' }}>
+                                <h3 style={{ marginBottom: '0.4rem', fontSize: '1rem' }}>Complete Your Profile</h3>
+                                <p style={{ marginBottom: '0.8rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                    Your profile is {profileCompletion.percentage}% complete. Fill all required fields to unlock all student features.
+                                </p>
+                                <div style={{ height: '8px', background: 'var(--bg-dark)', borderRadius: '99px', overflow: 'hidden', marginBottom: '0.9rem' }}>
+                                    <div style={{ height: '100%', width: `${profileCompletion.percentage}%`, background: 'var(--warning)' }} />
+                                </div>
+                                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                                    Missing: {profileCompletion.missingFields.join(', ')}
+                                </p>
+                                <div className="flex gap-1 mt-1.5">
+                                    <button className="btn btn-primary btn-sm" onClick={() => navigate('/student/profile')}>Complete Profile</button>
+                                    <button className="btn btn-secondary btn-sm" onClick={() => setShowProfilePopup(false)}>Remind Me Later</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Stats Grid */}
                 <div className="stats-grid">

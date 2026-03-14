@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
         department: String,
         batch: String,
         cgpa: Number,
+        phoneCountryCode: { type: String, default: '+91' },
         phone: String,
         address: String,
         dob: Date,
@@ -92,6 +93,7 @@ const userSchema = new mongoose.Schema({
     recruiterProfile: {
         company: String,
         designation: String,
+        phoneCountryCode: { type: String, default: '+91' },
         phone: String,
         companyWebsite: String,
         companyDescription: String,
