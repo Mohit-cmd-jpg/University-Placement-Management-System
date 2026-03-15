@@ -433,7 +433,7 @@ async function seed() {
   console.log('Creating admin account...');
   const admin = await User.create({
     name: 'Kriti Sharma',
-    email: 'kritiSharma@gmail.com',
+    email: 'kumarmohit78774@gmail.com',
     password: '111111',
     role: 'admin',
     isVerified: true,
@@ -701,7 +701,7 @@ async function seed() {
 
   console.log('Seed complete.');
   console.log(counts);
-  console.log('Admin login email: kritiSharma@gmail.com');
+  console.log('Admin login email: kumarmohit78774@gmail.com');
   console.log('Admin login password: 111111');
 
   await mongoose.disconnect();

@@ -22,7 +22,7 @@ PlacePrep centralizes the university placement process—moving away from scatte
 - **Production API Base:** [https://university-placement-portal-seven.vercel.app/api](https://university-placement-portal-seven.vercel.app/api)
 
 ### Demo Credentials
-- **Admin:** `kritiSharma@gmail.com` / `111111`
+- **Admin:** `kumarmohit78774@gmail.com` / `111111`
 - **Demo student and recruiter accounts:** seeded with password `111111`
 
 ---
