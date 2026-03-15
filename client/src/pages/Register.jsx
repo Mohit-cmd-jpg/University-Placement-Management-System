@@ -56,7 +56,11 @@ const Register = () => {
             });
 
             if (!res.data.token) {
-                toast.success('Account verified! Please wait for Admin approval before logging in.', { duration: 6000 });
+                const adminEmail = res.data.adminEmail || import.meta.env.VITE_ADMIN_EMAIL || 'mohittttttt48@gmail.com';
+                toast.success(
+                    `Your recruiter account request is under review. Please email your documents to ${adminEmail}: Aadhaar/ID proof, resume, company details, contact details, and the job roles you plan to offer.`,
+                    { duration: 12000 }
+                );
                 navigate('/login');
                 return;
             }

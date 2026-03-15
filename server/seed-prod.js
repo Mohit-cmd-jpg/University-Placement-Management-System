@@ -42,7 +42,7 @@ const seedDB = async () => {
         // Actually, let's just create them if they don't exist, rather than deleting everything.
         // Or perhaps delete only the dummy ones to prevent duplicates on multiple runs.
 
-        await User.deleteMany({ email: { $in: ['admin@uniplacements.com', ...recruiters.map(r => r.email), ...students.map(s => s.email)] } });
+        await User.deleteMany({ email: { $in: ['mohittttttt48@gmail.com', ...recruiters.map(r => r.email), ...students.map(s => s.email)] } });
         await Job.deleteMany({});
         await Application.deleteMany({});
 
@@ -52,7 +52,7 @@ const seedDB = async () => {
         console.log('Creating Admin...');
         const admin = new User({
             name: 'System Admin',
-            email: 'admin@uniplacements.com',
+            email: 'mohittttttt48@gmail.com',
             password: passwordReset,
             role: 'admin',
             isVerified: true
@@ -164,7 +164,7 @@ const seedDB = async () => {
         }
 
         console.log('Seeding Complete! 🎉');
-        console.log('Admin Email: admin@uniplacements.com | Password: DemoUser123!');
+        console.log('Admin Email: mohittttttt48@gmail.com | Password: DemoUser123!');
         console.log('Recruiters created:', recruiters.map(r => r.email).join(', '));
         process.exit(0);
     } catch (err) {

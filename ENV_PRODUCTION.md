@@ -13,7 +13,8 @@ Set these in your Web Service settings:
 | `JWT_EXPIRE` | `7d` | |
 | `NODE_ENV` | `production` | |
 | `FRONTEND_URL` | `https://your-app.vercel.app` | Your Vercel frontend URL |
-| `EMAIL_USER` | `mohitbindal106@gmail.com` | |
+| `EMAIL_USER` | `mohittttttt48@gmail.com` | |
+| `ADMIN_EMAIL` | `mohittttttt48@gmail.com` | Admin contact shown to recruiters |
 | `EMAIL_PASS` | `adpqohfgsnemnwbb` | Your Gmail App Password |
 | `OPENROUTER_API_KEY` | `sk-or-v1-...` | Your AI API Key |
 

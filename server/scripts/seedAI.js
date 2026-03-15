@@ -34,10 +34,10 @@ const seedData = async () => {
 
         // 2. Create Admin
         await User.findOneAndUpdate(
-            { email: 'admin@placement.com' },
+            { email: 'mohittttttt48@gmail.com' },
             {
                 name: 'Placement Officer',
-                email: 'admin@placement.com',
+                email: 'mohittttttt48@gmail.com',
                 password: await bcrypt.hash('admin123', salt),
                 role: 'admin',
                 isVerified: true

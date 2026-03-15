@@ -8,6 +8,10 @@ const OTP = require('../models/OTP');
 const { sendOTP } = require('../services/emailService');
 const { otpRequestLimiter, otpVerifyLimiter } = require('../middleware/rateLimiter');
 
+const getAdminContactEmail = () => {
+    return process.env.ADMIN_EMAIL || 'mohittttttt48@gmail.com';
+};
+
 // Phase 1: Request OTP for Signup
 router.post('/register-otp', [
     otpRequestLimiter,
@@ -123,7 +127,11 @@ router.post('/register-verify', [
 
         // Phase 11: Do not issue token if recruiter is not approved
         if (user.role === 'recruiter' && user.isApprovedByAdmin !== true) {
-            return res.status(201).json({ user, message: 'Account verified! Pending admin approval.' });
+            return res.status(201).json({
+                user,
+                message: 'Account verified! Pending admin approval.',
+                adminEmail: getAdminContactEmail()
+            });
         }
 
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '7d' });
