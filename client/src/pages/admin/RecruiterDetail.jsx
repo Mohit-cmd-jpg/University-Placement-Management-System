@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { adminAPI, applicationAPI, jobAPI } from '../../services/api';
+import { adminAPI, applicationAPI, jobAPI, FILE_BASE_URL } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const RecruiterDetail = () => {
@@ -12,6 +12,10 @@ const RecruiterDetail = () => {
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expandedJob, setExpandedJob] = useState(null);
+    const [showMessageModal, setShowMessageModal] = useState(false);
+    const [messageSubject, setMessageSubject] = useState('');
+    const [messageBody, setMessageBody] = useState('');
+    const [sendingMessage, setSendingMessage] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -99,6 +103,27 @@ const RecruiterDetail = () => {
         }
     };
 
+    const handleSendMessage = async () => {
+        if (!messageSubject.trim() || !messageBody.trim()) {
+            toast.error('Please fill in both subject and message');
+            return;
+        }
+
+        try {
+            setSendingMessage(true);
+            await adminAPI.sendMessage(id, messageSubject, messageBody);
+            toast.success('Message sent successfully!');
+            setMessageSubject('');
+            setMessageBody('');
+            setShowMessageModal(false);
+        } catch (error) {
+            toast.error('Error sending message');
+            console.error(error);
+        } finally {
+            setSendingMessage(false);
+        }
+    };
+
     if (loading) return <Layout title="Recruiter Profile"><div className="loading"><div className="spinner"></div></div></Layout>;
 
     if (!recruiter) return <Layout title="Recruiter Profile"><div style={{ padding: '2rem', textAlign: 'center' }}>Recruiter not found</div></Layout>;
@@ -115,10 +140,13 @@ const RecruiterDetail = () => {
     return (
         <Layout title="Recruiter Profile">
             <div className="fade-in" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                {/* Header with back button */}
+                {/* Header with back and message buttons */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
                     <button onClick={() => navigate('/admin/recruiters')} className="btn btn-secondary" style={{ padding: '0.5rem 1rem' }}>
                         ← Back to Recruiters
+                    </button>
+                    <button onClick={() => setShowMessageModal(true)} className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>
+                        💬 Send Message
                     </button>
                 </div>
 
@@ -370,6 +398,82 @@ const RecruiterDetail = () => {
                         </div>
                     )}
                 </div>
+
+                {/* Message Modal */}
+                {showMessageModal && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000
+                    }}>
+                        <div className="card" style={{ width: '90%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
+                            <h3 style={{ marginBottom: '1rem' }}>Send Message to {recruiter.name}</h3>
+                            
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Subject</label>
+                                <input
+                                    type="text"
+                                    value={messageSubject}
+                                    onChange={(e) => setMessageSubject(e.target.value)}
+                                    placeholder="Message subject"
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        borderRadius: '8px',
+                                        border: '1px solid var(--border-color)',
+                                        fontSize: '1rem',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Message</label>
+                                <textarea
+                                    value={messageBody}
+                                    onChange={(e) => setMessageBody(e.target.value)}
+                                    placeholder="Type your message here..."
+                                    rows="6"
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        borderRadius: '8px',
+                                        border: '1px solid var(--border-color)',
+                                        fontSize: '1rem',
+                                        fontFamily: 'inherit',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                <button
+                                    onClick={() => setShowMessageModal(false)}
+                                    className="btn btn-secondary"
+                                    disabled={sendingMessage}
+                                    style={{ padding: '0.5rem 1rem' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSendMessage}
+                                    className="btn btn-primary"
+                                    disabled={sendingMessage}
+                                    style={{ padding: '0.5rem 1rem' }}
+                                >
+                                    {sendingMessage ? 'Sending...' : 'Send Message'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </Layout>
     );

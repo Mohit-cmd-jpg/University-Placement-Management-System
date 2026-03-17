@@ -97,6 +97,7 @@ export const adminAPI = {
     deleteAnnouncement: (id) => api.delete(`/admin/announcements/${id}`),
     getReports: () => api.get('/admin/reports'),
     getDashboard: () => api.get('/admin/dashboard'),
+    sendMessage: (userId, subject, message) => api.post(`/admin/message/${userId}`, { subject, message }),
 };
 
 // Notifications

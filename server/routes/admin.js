@@ -411,6 +411,38 @@ router.get('/dashboard', auth, authorize('admin'), async (req, res) => {
     }
 });
 
+// ==================== Messaging ====================
+
+// Send message to student or recruiter
+router.post('/message/:userId', auth, authorize('admin'), async (req, res) => {
+    try {
+        const { subject, message } = req.body;
+        
+        if (!subject || !message) {
+            return res.status(400).json({ error: 'Subject and message are required' });
+        }
+
+        const user = await User.findById(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const notification = new Notification({
+            user: req.params.userId,
+            title: subject,
+            message: message,
+            type: 'admin_message',
+            sentBy: req.user._id,
+            link: user.role === 'student' ? '/student/notifications' : '/recruiter/notifications'
+        });
+
+        await notification.save();
+        res.status(201).json({ message: 'Message sent successfully', notification });
+    } catch (error) {
+        res.status(500).json({ error: 'Error sending message' });
+    }
+});
+
 // ==================== Demo Data Seeding ====================
 
 router.post('/seed-demo-data', auth, authorize('admin'), async (req, res) => {

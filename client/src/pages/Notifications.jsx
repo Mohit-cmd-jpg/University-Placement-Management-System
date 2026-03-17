@@ -23,7 +23,7 @@ const Notifications = () => {
         } catch { }
     };
 
-    const typeIcons = { info: 'ℹ️', success: '✅', warning: '⚠️', application: '📋', announcement: '📢' };
+    const typeIcons = { info: 'ℹ️', success: '✅', warning: '⚠️', application: '📋', announcement: '📢', admin_message: '💬' };
 
     const resolveNotificationRoute = (notification) => {
         if (notification?.link) return notification.link;
