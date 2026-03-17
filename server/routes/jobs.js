@@ -17,18 +17,7 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-// Get job by id
-router.get('/:id', auth, async (req, res) => {
-    try {
-        const job = await Job.findById(req.params.id).populate('postedBy', 'name email recruiterProfile');
-        if (!job) return res.status(404).json({ error: 'Job not found' });
-        res.json(job);
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-// Get job attachment
+// Get job attachment (MUST be before /:id route)
 router.get('/:id/attachment', auth, async (req, res) => {
     try {
         const job = await Job.findById(req.params.id);
@@ -39,11 +28,23 @@ router.get('/:id/attachment', auth, async (req, res) => {
         }
         
         const buffer = Buffer.from(job.attachmentFile, 'base64');
-        res.set('Content-Type', job.attachmentContentType);
+        res.set('Content-Type', job.attachmentContentType || 'application/octet-stream');
         res.set('Content-Disposition', `attachment; filename="${job.attachmentFileName}"`);
         res.send(buffer);
     } catch (error) {
+        console.error('Attachment download error:', error);
         res.status(500).json({ error: 'Error downloading attachment' });
+    }
+});
+
+// Get job by id
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const job = await Job.findById(req.params.id).populate('postedBy', 'name email recruiterProfile');
+        if (!job) return res.status(404).json({ error: 'Job not found' });
+        res.json(job);
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
     }
 });
 

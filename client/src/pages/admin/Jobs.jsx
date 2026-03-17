@@ -126,7 +126,7 @@ const AdminJobs = () => {
 
                         <div style={{ marginBottom: '1.5rem' }}>
                             <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Description</label>
-                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{selectedJob.description}</p>
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.25rem', whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{selectedJob.description}</p>
                         </div>
 
                         {selectedJob.attachmentFile && (
@@ -143,8 +143,10 @@ const AdminJobs = () => {
                                             document.body.appendChild(element);
                                             element.click();
                                             document.body.removeChild(element);
+                                            URL.revokeObjectURL(element.href);
                                         } catch (err) {
-                                            toast.error('Failed to download attachment');
+                                            console.error('Download error:', err);
+                                            toast.error(err.response?.data?.error || 'Failed to download attachment');
                                         }
                                     }}
                                 >

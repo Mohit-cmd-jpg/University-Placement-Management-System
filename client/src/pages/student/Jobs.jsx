@@ -166,8 +166,10 @@ const StudentJobs = () => {
                                                 document.body.appendChild(element);
                                                 element.click();
                                                 document.body.removeChild(element);
+                                                URL.revokeObjectURL(element.href);
                                             } catch (err) {
-                                                toast.error('Failed to download attachment');
+                                                console.error('Download error:', err);
+                                                toast.error(err.response?.data?.error || 'Failed to download attachment');
                                             }
                                         }}
                                     >
@@ -177,7 +179,7 @@ const StudentJobs = () => {
                             )}
                             <div style={{ marginBottom: '1rem' }}>
                                 <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Description</h4>
-                                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{selectedJob.description}</p>
+                                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{selectedJob.description}</p>
                             </div>
                             {selectedJob.requirements?.length > 0 && (
                                 <div style={{ marginBottom: '1rem' }}>
