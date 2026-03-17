@@ -187,6 +187,64 @@ router.get('/resume/:id', async (req, res) => {
     }
 });
 
+// Upload Profile Photo
+router.post('/profile-photo', auth, authorize('student'), upload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // Accept JPEG and PNG images only
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(req.file.mimetype)) {
+            return res.status(400).json({ error: 'Only JPEG, PNG, and WebP images are supported' });
+        }
+
+        // Limit file size to 5MB
+        if (req.file.size > 5 * 1024 * 1024) {
+            return res.status(400).json({ error: 'Image size must be less than 5MB' });
+        }
+
+        const fileBuffer = req.file.buffer;
+        const base64String = fileBuffer.toString('base64');
+        const contentType = req.file.mimetype;
+
+        // Save Base64 string to user profile
+        const student = await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                'studentProfile.profileImage': base64String,
+                'studentProfile.profileImageContentType': contentType
+            },
+            { new: true }
+        );
+
+        res.json({ message: 'Profile photo uploaded successfully', student });
+    } catch (error) {
+        console.error('Error uploading profile photo:', error);
+        res.status(500).json({ error: 'Error uploading profile photo' });
+    }
+});
+
+// GET /students/profile-photo/:id — Serve Profile Photo from MongoDB Base64
+router.get('/profile-photo/:id', async (req, res) => {
+    try {
+        const student = await User.findById(req.params.id);
+        if (!student || !student.studentProfile || !student.studentProfile.profileImage) {
+            return res.status(404).json({ error: 'Profile photo not found' });
+        }
+
+        const imageBuffer = Buffer.from(student.studentProfile.profileImage, 'base64');
+        const contentType = student.studentProfile.profileImageContentType || 'image/jpeg';
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', 'inline');
+        res.send(imageBuffer);
+    } catch (error) {
+        console.error('Error serving profile photo:', error);
+        res.status(500).json({ error: 'Error serving profile photo' });
+    }
+});
+
 // POST /students/recommendations — AI Personalized Recommendations
 router.post('/recommendations', auth, authorize('student'), async (req, res) => {
     try {

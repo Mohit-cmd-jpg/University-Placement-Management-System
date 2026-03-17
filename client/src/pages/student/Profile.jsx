@@ -13,6 +13,8 @@ const StudentProfile = () => {
     });
     const [loading, setLoading] = useState(false);
     const [resumeFile, setResumeFile] = useState(null);
+    const [photoFile, setPhotoFile] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(null);
 
     useEffect(() => {
         if (user) {
@@ -24,6 +26,10 @@ const StudentProfile = () => {
                 twelfthPercentage: sp.twelfthPercentage || '', linkedIn: sp.linkedIn || '',
                 github: sp.github || '', portfolio: sp.portfolio || '', address: sp.address || ''
             });
+            // Set photo preview if profile photo exists
+            if (sp.profileImage) {
+                setPhotoPreview(`data:${sp.profileImageContentType};base64,${sp.profileImage}`);
+            }
         }
     }, [user]);
 
@@ -38,6 +44,32 @@ const StudentProfile = () => {
             return setForm({ ...form, phoneCountryCode: normalized });
         }
         setForm({ ...form, [name]: value });
+    };
+
+    const handlePhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            toast.error('Only JPEG, PNG, and WebP images are supported');
+            return;
+        }
+
+        // Validate file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Image size must be less than 5MB');
+            return;
+        }
+
+        setPhotoFile(file);
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setPhotoPreview(reader.result);
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSubmit = async (e) => {
@@ -74,6 +106,12 @@ const StudentProfile = () => {
                 await studentAPI.uploadResume(formData);
             }
 
+            if (photoFile) {
+                const photoFormData = new FormData();
+                photoFormData.append('photo', photoFile);
+                await studentAPI.uploadProfilePhoto(photoFormData);
+            }
+
             const data = { ...form, skills: form.skills.split(',').map(s => s.trim()).filter(Boolean), cgpa: parseFloat(form.cgpa) || 0, tenthPercentage: parseFloat(form.tenthPercentage) || 0, twelfthPercentage: parseFloat(form.twelfthPercentage) || 0 };
             const res = await studentAPI.updateProfile(data);
             updateUser(res.data);
@@ -82,6 +120,12 @@ const StudentProfile = () => {
                 const profileRes = await studentAPI.getProfile();
                 updateUser(profileRes.data);
                 setResumeFile(null);
+            }
+
+            if (photoFile) {
+                const profileRes = await studentAPI.getProfile();
+                updateUser(profileRes.data);
+                setPhotoFile(null);
             }
 
             toast.success('Profile saved!');
@@ -98,6 +142,41 @@ const StudentProfile = () => {
                 <div className="card" style={{ maxWidth: '800px' }}>
                     <h2 style={{ marginBottom: '1.5rem' }}>Profile Information</h2>
                     <form onSubmit={handleSubmit}>
+                        {/* Profile Photo Section */}
+                        <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+                            <h3 style={{ marginBottom: '1rem' }}>Profile Photo</h3>
+                            <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+                                {/* Photo Display */}
+                                <div style={{ flex: '0 0 120px', textAlign: 'center' }}>
+                                    {photoPreview ? (
+                                        <img src={photoPreview} alt="Profile" style={{ width: '120px', height: '120px', borderRadius: '12px', objectFit: 'cover', border: '2px solid var(--primary)' }} />
+                                    ) : (
+                                        <div style={{ width: '120px', height: '120px', borderRadius: '12px', backgroundColor: 'rgba(37, 99, 235, 0.1)', border: '2px dashed var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                            No photo
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Upload Input */}
+                                <div style={{ flex: 1 }}>
+                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                                        Upload a clear profile photo (JPEG, PNG, or WebP). Max 5MB. Optional.
+                                    </p>
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        onChange={handlePhotoChange}
+                                        style={{ width: '100%' }}
+                                    />
+                                    {photoFile && (
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--success)', margin: '0.5rem 0 0 0' }}>
+                                            ✓ Selected: {photoFile.name} — will be uploaded on Save
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="form-row">
                             <div className="form-group"><label>Full Name</label><input name="name" value={form.name} onChange={handleChange} required /></div>
                             <div className="form-group"><label>Roll Number</label><input name="rollNumber" value={form.rollNumber} onChange={handleChange} required /></div>

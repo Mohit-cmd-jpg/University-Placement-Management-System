@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema({
         resumeUrl: String,
         resumeBase64: String, // Added for Vercel Serverless storage
         resumeContentType: String,
+        profileImage: String, // Profile photo stored as Base64
+        profileImageContentType: String, // MIME type of profile image
         linkedIn: String,
         github: String,
         portfolio: String,
@@ -98,7 +100,9 @@ const userSchema = new mongoose.Schema({
         companyWebsite: String,
         companyDescription: String,
         companyLogo: String,
-        industry: String
+        industry: String,
+        profileImage: String, // Profile photo stored as Base64
+        profileImageContentType: String // MIME type of profile image
     }
 }, { timestamps: true });
 

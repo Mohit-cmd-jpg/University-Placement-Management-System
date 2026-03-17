@@ -40,6 +40,7 @@ export const studentAPI = {
     getProfile: () => api.get('/students/profile'),
     updateProfile: (data) => api.put('/students/profile', data),
     uploadResume: (formData) => api.post('/students/resume', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    uploadProfilePhoto: (formData) => api.post('/students/profile-photo', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
     analyzeResume: () => api.post('/students/analyze-resume'),
     getRecommendations: (targetRole) => api.post('/students/recommendations', { targetRole }),
     getRecommendationHistory: () => api.get('/students/recommendations/history'),
@@ -51,6 +52,7 @@ export const studentAPI = {
 export const recruiterAPI = {
     getProfile: () => api.get('/recruiters/profile'),
     updateProfile: (data) => api.put('/recruiters/profile', data),
+    uploadProfilePhoto: (formData) => api.post('/recruiters/profile-photo', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
     getAll: () => api.get('/recruiters'),
 };
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { auth, authorize } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const User = require('../models/User');
 
 // Get recruiter profile
@@ -66,6 +67,64 @@ router.get('/', auth, authorize('admin'), async (req, res) => {
         res.json(recruiters);
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Upload Profile Photo
+router.post('/profile-photo', auth, authorize('recruiter'), upload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // Accept JPEG and PNG images only
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(req.file.mimetype)) {
+            return res.status(400).json({ error: 'Only JPEG, PNG, and WebP images are supported' });
+        }
+
+        // Limit file size to 5MB
+        if (req.file.size > 5 * 1024 * 1024) {
+            return res.status(400).json({ error: 'Image size must be less than 5MB' });
+        }
+
+        const fileBuffer = req.file.buffer;
+        const base64String = fileBuffer.toString('base64');
+        const contentType = req.file.mimetype;
+
+        // Save Base64 string to recruiter profile
+        const recruiter = await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                'recruiterProfile.profileImage': base64String,
+                'recruiterProfile.profileImageContentType': contentType
+            },
+            { new: true }
+        );
+
+        res.json({ message: 'Profile photo uploaded successfully', recruiter });
+    } catch (error) {
+        console.error('Error uploading profile photo:', error);
+        res.status(500).json({ error: 'Error uploading profile photo' });
+    }
+});
+
+// GET /recruiters/profile-photo/:id — Serve Profile Photo from MongoDB Base64
+router.get('/profile-photo/:id', async (req, res) => {
+    try {
+        const recruiter = await User.findById(req.params.id);
+        if (!recruiter || !recruiter.recruiterProfile || !recruiter.recruiterProfile.profileImage) {
+            return res.status(404).json({ error: 'Profile photo not found' });
+        }
+
+        const imageBuffer = Buffer.from(recruiter.recruiterProfile.profileImage, 'base64');
+        const contentType = recruiter.recruiterProfile.profileImageContentType || 'image/jpeg';
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', 'inline');
+        res.send(imageBuffer);
+    } catch (error) {
+        console.error('Error serving profile photo:', error);
+        res.status(500).json({ error: 'Error serving profile photo' });
     }
 });
 
