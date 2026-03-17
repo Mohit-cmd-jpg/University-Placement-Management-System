@@ -27,6 +27,7 @@ import MyJobs from './pages/recruiter/MyJobs';
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminStudents from './pages/admin/Students';
+import AdminStudentDetail from './pages/admin/StudentDetail';
 import AdminRecruiters from './pages/admin/Recruiters';
 import AdminJobs from './pages/admin/Jobs';
 import AdminDrives from './pages/admin/Drives';
@@ -73,6 +74,7 @@ function App() {
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/students" element={<ProtectedRoute roles={['admin']}><AdminStudents /></ProtectedRoute>} />
+            <Route path="/admin/students/:id" element={<ProtectedRoute roles={['admin']}><AdminStudentDetail /></ProtectedRoute>} />
             <Route path="/admin/recruiters" element={<ProtectedRoute roles={['admin']}><AdminRecruiters /></ProtectedRoute>} />
             <Route path="/admin/jobs" element={<ProtectedRoute roles={['admin']}><AdminJobs /></ProtectedRoute>} />
             <Route path="/admin/drives" element={<ProtectedRoute roles={['admin']}><AdminDrives /></ProtectedRoute>} />

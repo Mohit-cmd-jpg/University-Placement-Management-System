@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { studentAPI, adminAPI, FILE_BASE_URL } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const AdminStudents = () => {
+    const navigate = useNavigate();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -67,7 +69,10 @@ const AdminStudents = () => {
                                         </span>
                                     </td>
                                     <td data-label="Actions">
-                                        <div className="flex gap-1 justify-end-mobile">
+                                        <div className="flex gap-1 justify-end-mobile" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                                            <button className="btn btn-sm btn-primary" onClick={() => navigate(`/admin/students/${s._id}`)}>
+                                                Details
+                                            </button>
                                             <button className={`btn btn-sm ${s.isVerified ? 'btn-warning' : 'btn-success'}`} onClick={() => toggleVerify(s._id, s.isVerified)}>
                                                 {s.isVerified ? 'Revoke' : 'Verify'}
                                             </button>
