@@ -39,6 +39,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { path: '/admin/jobs', icon: <FiCheckSquare />, label: 'Job Approvals' },
         { path: '/admin/drives', icon: <FiCalendar />, label: 'Placement Drives' },
         { path: '/admin/announcements', icon: <FiBell />, label: 'Announcements' },
+        { path: '/admin/admins', icon: <FiUser />, label: 'Admin Management' },
         { path: '/admin/reports', icon: <FiBarChart2 />, label: 'Reports' },
     ];
 

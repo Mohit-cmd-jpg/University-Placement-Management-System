@@ -98,6 +98,9 @@ export const adminAPI = {
     getReports: () => api.get('/admin/reports'),
     getDashboard: () => api.get('/admin/dashboard'),
     sendMessage: (userId, subject, message) => api.post(`/admin/message/${userId}`, { subject, message }),
+    getAdmins: () => api.get('/admin/admins'),
+    promoteToAdmin: (userId) => api.post(`/admin/promote/${userId}`),
+    removeAdmin: (adminId) => api.delete(`/admin/admins/${adminId}`),
 };
 
 // Notifications

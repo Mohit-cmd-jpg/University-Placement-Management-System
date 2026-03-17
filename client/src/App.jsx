@@ -35,6 +35,7 @@ import AdminDrives from './pages/admin/Drives';
 import AdminAnnouncements from './pages/admin/Announcements';
 import AdminReports from './pages/admin/Reports';
 import AdminProfile from './pages/admin/Profile';
+import AdminManagement from './pages/admin/Admins';
 
 // Shared
 import Notifications from './pages/Notifications';
@@ -81,6 +82,7 @@ function App() {
             <Route path="/admin/jobs" element={<ProtectedRoute roles={['admin']}><AdminJobs /></ProtectedRoute>} />
             <Route path="/admin/drives" element={<ProtectedRoute roles={['admin']}><AdminDrives /></ProtectedRoute>} />
             <Route path="/admin/announcements" element={<ProtectedRoute roles={['admin']}><AdminAnnouncements /></ProtectedRoute>} />
+            <Route path="/admin/admins" element={<ProtectedRoute roles={['admin']}><AdminManagement /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute roles={['admin']}><AdminReports /></ProtectedRoute>} />
             <Route path="/admin/profile" element={<ProtectedRoute roles={['admin']}><AdminProfile /></ProtectedRoute>} />
             <Route path="/admin/notifications" element={<ProtectedRoute roles={['admin']}><Notifications /></ProtectedRoute>} />

@@ -99,6 +99,82 @@ router.delete('/recruiters/:id', auth, authorize('admin'), async (req, res) => {
     }
 });
 
+// ==================== Admin Management ====================
+
+// Get all admins
+router.get('/admins', auth, authorize('admin'), async (req, res) => {
+    try {
+        const admins = await User.find({ role: 'admin' }).select('name email createdAt').sort('-createdAt');
+        res.json(admins);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching admins' });
+    }
+});
+
+// Promote user to admin
+router.post('/promote/:userId', auth, authorize('admin'), async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (user.role === 'admin') {
+            return res.status(400).json({ error: 'User is already an admin' });
+        }
+
+        // Update user role to admin
+        user.role = 'admin';
+        await user.save();
+
+        // Send notification to new admin
+        await new Notification({
+            user: user._id,
+            title: 'Admin Privileges Granted',
+            message: 'You have been promoted to Admin. You now have full access to the admin portal.',
+            type: 'success',
+            link: '/admin/dashboard'
+        }).save();
+
+        res.json({ message: 'User promoted to admin successfully', user });
+    } catch (error) {
+        res.status(500).json({ error: 'Error promoting user to admin' });
+    }
+});
+
+// Remove admin status
+router.delete('/admins/:id', auth, authorize('admin'), async (req, res) => {
+    try {
+        // Prevent removing the last admin (optional safety measure)
+        const adminCount = await User.countDocuments({ role: 'admin' });
+        if (adminCount <= 1) {
+            return res.status(400).json({ error: 'Cannot remove the last admin' });
+        }
+
+        const admin = await User.findById(req.params.id);
+        if (!admin) return res.status(404).json({ error: 'Admin not found' });
+
+        if (admin.role !== 'admin') {
+            return res.status(400).json({ error: 'User is not an admin' });
+        }
+
+        // Update user role
+        admin.role = 'student'; // Default to student role
+        await admin.save();
+
+        // Send notification
+        await new Notification({
+            user: admin._id,
+            title: 'Admin Privileges Revoked',
+            message: 'Your admin privileges have been revoked. You have been demoted to student role.',
+            type: 'warning',
+            link: '/student/dashboard'
+        }).save();
+
+        res.json({ message: 'Admin privileges revoked successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error removing admin privileges' });
+    }
+});
+
 // ==================== Job Management ====================
 
 // Get all jobs (for admin)
