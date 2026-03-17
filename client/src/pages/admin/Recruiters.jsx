@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { adminAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const AdminRecruiters = () => {
+    const navigate = useNavigate();
     const [recruiters, setRecruiters] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -64,7 +66,10 @@ const AdminRecruiters = () => {
                                         </span>
                                     </td>
                                     <td data-label="Actions">
-                                        <div className="flex gap-1 justify-end-mobile">
+                                        <div className="flex gap-1 justify-end-mobile" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                                            <button className="btn btn-sm btn-primary" onClick={() => navigate(`/admin/recruiters/${r._id}`)}>
+                                                Details
+                                            </button>
                                             <button
                                                 className={`btn btn-sm ${r.isApprovedByAdmin ? 'btn-warning' : 'btn-success'}`}
                                                 onClick={() => toggleVerify(r._id, r.isApprovedByAdmin)}
