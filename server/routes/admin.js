@@ -101,6 +101,16 @@ router.delete('/recruiters/:id', auth, authorize('admin'), async (req, res) => {
 
 // ==================== Job Management ====================
 
+// Get all jobs (for admin)
+router.get('/jobs', auth, authorize('admin'), async (req, res) => {
+    try {
+        const jobs = await Job.find().populate('postedBy', 'name email recruiterProfile').sort('-createdAt');
+        res.json(jobs);
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Get pending jobs
 router.get('/jobs/pending', auth, authorize('admin'), async (req, res) => {
     try {

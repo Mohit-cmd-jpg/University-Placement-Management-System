@@ -64,6 +64,7 @@ export const jobAPI = {
     update: (id, data) => api.put(`/jobs/${id}`, data),
     delete: (id) => api.delete(`/jobs/${id}`),
     getMyJobs: () => api.get('/jobs/recruiter/my-jobs'),
+    getAllForAdmin: () => api.get('/admin/jobs'), // Get all jobs for admin
 };
 
 // Applications

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { adminAPI, applicationAPI } from '../../services/api';
+import { adminAPI, applicationAPI, jobAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const RecruiterDetail = () => {
@@ -46,25 +46,19 @@ const RecruiterDetail = () => {
         if (recruiter) {
             const fetchJobs = async () => {
                 try {
-                    // We need to fetch all jobs and filter by recruiter
-                    // Since there's no direct endpoint for admin to get recruiter's jobs,
-                    // we'll simulate by fetching from the applications data
-                    const jobsFromApps = new Map();
-                    applications.forEach(app => {
-                        if (app.job && app.job.postedBy === recruiter._id) {
-                            if (!jobsFromApps.has(app.job._id)) {
-                                jobsFromApps.set(app.job._id, app.job);
-                            }
-                        }
-                    });
-                    setJobs(Array.from(jobsFromApps.values()));
+                    // Fetch all jobs for admin
+                    const jobsRes = await jobAPI.getAllForAdmin();
+                    // Filter by recruiter's ID
+                    const recruiterJobs = jobsRes.data.filter(job => job.postedBy === recruiter._id);
+                    setJobs(recruiterJobs);
                 } catch (err) {
                     console.error(err);
+                    toast.error('Error loading jobs');
                 }
             };
             fetchJobs();
         }
-    }, [recruiter, applications]);
+    }, [recruiter]);
 
     const getJobStatusCounts = (jobId) => {
         const jobApps = applications.filter(app => app.job?._id === jobId);
