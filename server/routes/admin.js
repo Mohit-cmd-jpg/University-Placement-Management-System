@@ -613,4 +613,60 @@ router.post('/seed-demo-data', auth, authorize('admin'), async (req, res) => {
     }
 });
 
+// ==================== Maintenance ====================
+
+// Manual trigger for expiry check
+router.post('/maintenance/trigger-expiry-check', auth, authorize('admin'), async (req, res) => {
+    try {
+        const { runExpiryCheck } = require('../services/expiryService');
+        const result = await runExpiryCheck();
+        res.json({ 
+            message: 'Expiry check completed',
+            summary: result
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Error triggering expiry check', details: error.message });
+    }
+});
+
+// Get expired items summary
+router.get('/maintenance/expired-items', auth, authorize('admin'), async (req, res) => {
+    try {
+        const now = new Date();
+        
+        const expiredJobs = await Job.find({
+            deadline: { $lt: now },
+            isActive: false
+        }).select('title company deadline').sort('-deadline');
+        
+        const expiredAnnouncements = await Announcement.find({
+            expiresAt: { $lt: now, $ne: null },
+            isActive: false
+        }).select('title expiresAt').sort('-expiresAt');
+        
+        const expiredDrives = await PlacementDrive.find({
+            date: { $lt: now },
+            isActive: false
+        }).select('title company date').sort('-date');
+
+        res.json({
+            expiredJobs: {
+                count: expiredJobs.length,
+                items: expiredJobs
+            },
+            expiredAnnouncements: {
+                count: expiredAnnouncements.length,
+                items: expiredAnnouncements
+            },
+            expiredDrives: {
+                count: expiredDrives.length,
+                items: expiredDrives
+            },
+            totalExpired: expiredJobs.length + expiredAnnouncements.length + expiredDrives.length
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching expired items', details: error.message });
+    }
+});
+
 module.exports = router;

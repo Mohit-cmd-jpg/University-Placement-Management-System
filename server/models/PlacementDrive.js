@@ -16,6 +16,7 @@ const placementDriveSchema = new mongoose.Schema({
         activity: String
     }],
     status: { type: String, enum: ['upcoming', 'ongoing', 'completed'], default: 'upcoming' },
+    isActive: { type: Boolean, default: true }, // Inactive if date has passed
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 

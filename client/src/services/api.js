@@ -107,6 +107,8 @@ export const adminAPI = {
     getAdmins: () => api.get('/admin/admins'),
     promoteToAdmin: (userId) => api.post(`/admin/promote/${userId}`),
     removeAdmin: (adminId) => api.delete(`/admin/admins/${adminId}`),
+    triggerExpiryCheck: () => api.post('/admin/maintenance/trigger-expiry-check'),
+    getExpiredItems: () => api.get('/admin/maintenance/expired-items'),
 };
 
 // Notifications

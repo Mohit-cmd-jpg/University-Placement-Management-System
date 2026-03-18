@@ -96,7 +96,12 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-
+// Initialize expiry check service (runs on startup and periodically)
+if (process.env.NODE_ENV !== 'production' || require.main === module) {
+  const { setupExpiryCheckInterval } = require('./services/expiryService');
+  // Run expiry check every 1 hour
+  setupExpiryCheckInterval(60 * 60 * 1000);
+}
 
 // Server start (only if not in a serverless environment like Vercel production)
 if (process.env.NODE_ENV !== 'production' || require.main === module) {
