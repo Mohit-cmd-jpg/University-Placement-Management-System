@@ -357,12 +357,14 @@ const MockTest = () => {
                                 </div>
                             ))}
                         </div>
+                    </div>
+                )}
 
-                        <div className="test-footer" style={{ position: 'fixed', bottom: '1.5rem', left: '1.5rem', right: '1.5rem', padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'center', zIndex: 100, boxShadow: '0 -10px 40px rgba(0,0,0,0.3)' }}>
-                            <button className="btn btn-primary btn-lg" onClick={handleSubmit} disabled={submitting} style={{ minWidth: '350px' }}>
-                                {submitting ? '✨ Evaluating with AI...' : 'Submit Test'}
-                            </button>
-                        </div>
+                {activeTest && !results && !loading && (
+                    <div className="test-footer" style={{ position: 'fixed', bottom: '1.5rem', left: '1.5rem', right: '1.5rem', padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'center', zIndex: 100, boxShadow: '0 -10px 40px rgba(0,0,0,0.3)' }}>
+                        <button className="btn btn-primary btn-lg" onClick={handleSubmit} disabled={submitting} style={{ minWidth: '350px' }}>
+                            {submitting ? '✨ Evaluating with AI...' : 'Submit Test'}
+                        </button>
                     </div>
                 )}
 
@@ -410,22 +412,30 @@ const MockTest = () => {
                         </div>
                     </div>
                 )}
+            </div>
 
-                {/* 5. Start Confirmation Modal */}
-                {selectedTestId && !loading && (
-                    <div className="modal-overlay" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(10px)', borderRadius: '12px' }}>
-                        <div className="card" style={{ maxWidth: '450px', width: '90%', textAlign: 'center', padding: '2.5rem', border: '1px solid var(--primary-light)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
-                            <div style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }}>🛡️</div>
-                            <h2 style={{ marginBottom: '1rem' }}>Enter Proctoring Mode</h2>
-                            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', lineHeight: '1.6' }}>The test will run in **mandatory full-screen mode**. Leaving or switching tabs will be recorded as a violation.</p>
-                            <div className="flex gap-1">
-                                <button className="btn btn-secondary" onClick={() => setSelectedTestId(null)} style={{ flex: 1 }}>Cancel</button>
-                                <button className="btn btn-primary" onClick={confirmStartTest} style={{ flex: 2 }}>Confirm & Start</button>
-                            </div>
+            {/* 5. Start Confirmation Modal (Moved outside localized container) */}
+            {selectedTestId && !loading && (
+                <div 
+                    className="modal-overlay" 
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(10px)' }}
+                    onClick={() => setSelectedTestId(null)}
+                >
+                    <div 
+                        className="card" 
+                        style={{ maxWidth: '450px', width: '90%', textAlign: 'center', padding: '2.5rem', border: '1px solid var(--primary-light)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)', background: 'var(--bg-card)', borderRadius: '16px' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }}>🛡️</div>
+                        <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem', fontWeight: 'bold' }}>Enter Proctoring Mode</h2>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', lineHeight: '1.6' }}>The test will run in <strong>mandatory full-screen mode</strong>. Leaving or switching tabs will be recorded as a violation.</p>
+                        <div className="flex gap-1">
+                            <button className="btn btn-secondary" onClick={() => setSelectedTestId(null)} style={{ flex: 1 }}>Cancel</button>
+                            <button className="btn btn-primary" onClick={confirmStartTest} style={{ flex: 2 }}>Confirm & Start</button>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </Layout>
     );
 };
