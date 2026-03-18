@@ -115,41 +115,42 @@ const InterviewTips = () => {
 
     return (
         <Layout title="AI Interview Prep">
-            <div className="fade-in" style={{ padding: '0.5rem 1rem', width: '100%', margin: '0 auto' }}>
+            <div className="fade-in" style={{ width: '100%' }}>
                 {!questions.length ? (
-                    <div className="card text-center fade-in" style={{
-                        margin: '1rem auto 3rem',
-                        padding: '4rem 2rem',
-                        borderRadius: '24px',
-                        background: 'var(--bg-card)',
-                        border: '1px solid var(--border)',
-                        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.08)',
-                        width: '100%'
+                    <div className="fade-in" style={{
+                        width: '100%',
+                        padding: '1rem 0 3rem 0',
+                        textAlign: 'left'
                     }}>
-                        <div style={{
-                            display: 'inline-flex',
-                            padding: '1.5rem',
-                            background: 'rgba(99, 102, 241, 0.1)',
-                            borderRadius: '24px',
-                            marginBottom: '1.5rem',
-                            fontSize: '3.5rem',
-                            color: 'var(--primary)',
-                            boxShadow: '0 10px 25px rgba(99,102,241,0.2)'
-                        }}>🎯</div>
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '1rem', color: 'var(--text-main)' }}>Simulation-Based AI Interview</h2>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2.5rem', lineHeight: 1.7, maxWidth: '800px', margin: '0 auto 2.5rem auto' }}>
-                            Master the art of technical interviews by practicing with our advanced AI. Receive instant, data-driven feedback on your content and delivery.
-                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+                            <div style={{
+                                width: '80px',
+                                height: '80px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'rgba(99, 102, 241, 0.1)',
+                                borderRadius: '20px',
+                                fontSize: '2.5rem',
+                                color: 'var(--primary)',
+                                boxShadow: '0 10px 25px rgba(99,102,241,0.2)'
+                            }}>🎯</div>
+                            <div>
+                                <h2 style={{ fontSize: '2.5rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Simulation-Based AI Interview</h2>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginTop: '0.5rem', lineHeight: 1.6, maxWidth: '800px' }}>
+                                    Master the art of technical interviews by practicing with our advanced AI. Receive instant, data-driven feedback on your content and delivery.
+                                </p>
+                            </div>
+                        </div>
 
                         {/* Configuration Panel */}
                         <div style={{
-                            margin: '0 auto',
-                            textAlign: 'left',
-                            background: 'var(--bg-dark)',
-                            borderRadius: '20px',
-                            padding: '2.5rem',
+                            width: '100%',
+                            background: 'var(--bg-card)',
+                            borderRadius: '24px',
+                            padding: '3rem',
                             border: '1px solid var(--border)',
-                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                            boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)'
                         }}>
                             {/* Row 1: Role + Question Count */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
@@ -199,8 +200,8 @@ const InterviewTips = () => {
                                         }}
                                     />
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                                        <span>3</span>
-                                        <span>15</span>
+                                        <span>1</span>
+                                        <span>5</span>
                                     </div>
                                 </div>
                             </div>
