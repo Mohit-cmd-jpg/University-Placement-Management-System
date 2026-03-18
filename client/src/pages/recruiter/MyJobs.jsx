@@ -204,7 +204,7 @@ const MyJobs = () => {
                                                     </td>
                                                     <td data-label="Actions" onClick={e => e.stopPropagation()}>
                                                         <div className="flex gap-1 justify-end-mobile">
-                                                            <button className="btn btn-secondary btn-sm" title="View Profile" onClick={() => { setSelectedJob(null); setTimeout(() => setSelectedCandidate(app), 0); }}>👤</button>
+                                                            <button className="btn btn-secondary btn-sm" title="View Profile" onClick={() => setSelectedCandidate(app)}>👤</button>
                                                             {app.status === 'applied' && <button className="btn btn-success btn-sm" title="Shortlist" onClick={() => updateAppStatus(app._id, 'shortlisted')}>✔️</button>}
                                                             {app.status === 'shortlisted' && <button className="btn btn-primary btn-sm" title="Select" onClick={() => updateAppStatus(app._id, 'selected')}>🎯</button>}
                                                             <button className="btn btn-danger btn-sm" title="Reject" onClick={() => updateAppStatus(app._id, 'rejected')}>✖️</button>
@@ -229,11 +229,14 @@ const MyJobs = () => {
             {/* Candidate Detail Modal - Full Profile */}
             {selectedCandidate && (
                 <div className="modal-overlay" onClick={() => setSelectedCandidate(null)}>
-                    <div className="modal modal-lg" onClick={(e) => e.stopPropagation()} style={{ width: '95vw', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <div style={{ marginBottom: '1.5rem' }}>
+                    <div className="modal modal-lg" onClick={(e) => e.stopPropagation()} style={{ width: '95vw', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
+                        {/* Close button */}
+                        <button onClick={() => setSelectedCandidate(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
+                        
+                        <div style={{ marginBottom: '1.5rem', paddingRight: '2rem' }}>
                             <h2 style={{ margin: 0 }}>📋 Applicant Profile</h2>
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '0.25rem' }}>
-                                Applied: {new Date(selectedCandidate.appliedAt).toLocaleDateString('en-IN')} • Status: <span className={`badge ${appStatusColors[selectedCandidate.status]}`} style={{ fontSize: '0.65rem' }}>{selectedCandidate.status.toUpperCase()}</span>
+                                Applied: {selectedCandidate.appliedAt ? new Date(selectedCandidate.appliedAt).toLocaleDateString('en-IN') : 'N/A'} • Status: <span className={`badge ${appStatusColors[selectedCandidate.status]}`} style={{ fontSize: '0.65rem' }}>{selectedCandidate.status.toUpperCase()}</span>
                             </p>
                         </div>
 
@@ -265,7 +268,7 @@ const MyJobs = () => {
                                     
                                     <div>
                                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.25rem' }}>Email</label>
-                                        <a href={`mailto:${selectedCandidate.student?.email}`} style={{ color: 'var(--primary)', fontWeight: 600 }}>{selectedCandidate.student?.email || 'N/A'}</a>
+                                        <a href={`mailto:${selectedCandidate.student?.email}`} style={{ color: 'var(--primary)', fontWeight: 600, wordBreak: 'break-all' }}>{selectedCandidate.student?.email || 'N/A'}</a>
                                     </div>
 
                                     <div>
