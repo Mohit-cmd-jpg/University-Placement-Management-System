@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import { applicationAPI } from '../../services/api';
+import ATSScoreCard from '../../components/ATSScoreCard';
 
 const statusColors = { applied: 'badge-info', shortlisted: 'badge-warning', interview: 'badge-primary', selected: 'badge-success', rejected: 'badge-danger' };
 
@@ -138,6 +139,14 @@ const JobDetailModal = ({ app, onClose }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* ATS Evaluation ScoreCard if available */}
+                {app.atsEvaluation && (
+                    <div style={{ marginTop: '1.75rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                        <h4 style={{ marginTop: 0, marginBottom: '1rem', color: 'var(--primary)', fontSize: '0.95rem', fontWeight: 700 }}>🤖 AI ATS Feedback</h4>
+                        <ATSScoreCard result={app.atsEvaluation} />
+                    </div>
+                )}
 
                 {/* Close Button */}
                 <div style={{ marginTop: '1.75rem', display: 'flex', gap: '0.75rem' }}>

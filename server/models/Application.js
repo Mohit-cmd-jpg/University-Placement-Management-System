@@ -18,6 +18,15 @@ const applicationSchema = new mongoose.Schema({
         riskFactors: [String],
         recommendation: { type: String, enum: ['Strong', 'Moderate', 'Weak'] },
         lastEvaluated: Date
+    },
+    atsEvaluation: {
+        atsScore: { type: Number, default: 0 },
+        keywordMatch: { type: Number, default: 0 },
+        skillsMatch: { type: Number, default: 0 },
+        experienceMatch: { type: Number, default: 0 },
+        formattingScore: { type: Number, default: 0 },
+        missingKeywords: [String],
+        suggestions: [String]
     }
 }, { timestamps: true });
 

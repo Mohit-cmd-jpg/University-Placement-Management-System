@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema({
         portfolio: String,
         isPlaced: { type: Boolean, default: false },
         placedAt: String,
+        parsedResumeData: { type: mongoose.Schema.Types.Mixed }, // Structured data from ATS parsing API
         aiResumeAnalysis: {
             // Aggregate score
             resumeScore: { type: Number, default: 0 },

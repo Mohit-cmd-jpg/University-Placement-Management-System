@@ -79,7 +79,10 @@ router.get('/my-applications', auth, authorize('student'), async (req, res) => {
 });
 
 const path = require('path');
-const { extractTextFromPDF, rankCandidateForJob, analyzeResume } = require('../services/aiService');
+const { extractTextFromPDF, analyzeResume } = require('../services/aiService');
+const { parseResumeFile } = require('../services/resumeParser');
+const { calculateScore } = require('../utils/atsScorer');
+const ATSSettings = require('../models/ATSSettings');
 
 
 // Get applicants for a job (recruiter)
@@ -94,7 +97,7 @@ router.get('/job/:jobId', auth, authorize('recruiter', 'admin'), async (req, res
     }
 });
 
-// AI Evaluate a single application (recruiter)
+// ATS / AI Evaluate a single application (recruiter)
 router.post('/:id/ai-evaluate', auth, authorize('recruiter'), async (req, res) => {
     try {
         const application = await Application.findById(req.params.id)
@@ -106,50 +109,42 @@ router.post('/:id/ai-evaluate', auth, authorize('recruiter'), async (req, res) =
         const studentProfile = application.student.studentProfile || {};
         const resumeUrl = application.resumeUrl || studentProfile.resumeUrl;
 
-        // Build candidate profile from stored data (no PDF parse needed for single eval)
-        const candidateProfile = {
-            name: application.student.name,
-            department: studentProfile.department || 'CS',
-            cgpa: studentProfile.cgpa || 0,
-            skills: studentProfile.skills || [],
-            resumeScore: studentProfile.aiResumeAnalysis?.resumeScore || studentProfile.aiResumeAnalysis?.score || 0,
-            additionalInfo: `CGPA: ${studentProfile.cgpa || 'N/A'}, Department: ${studentProfile.department || 'CS'}`
-        };
+        let settings = await ATSSettings.findOne({});
+        if (!settings) settings = new ATSSettings(); // Default weights
 
-        // Try to also include resume text if available
         if (resumeUrl) {
             try {
-                const filePath = path.join(__dirname, '../', resumeUrl);
-                const resumeText = await extractTextFromPDF(filePath);
-                candidateProfile.additionalInfo += '\n' + resumeText.slice(0, 600);
+                // In production, we'd pass the actual file buffer from GridFS or Base64 here.
+                // For the mocked parser, we can just pass the user metadata or URL
+                const parsedData = await parseResumeFile(studentProfile.resumeBase64 || resumeUrl);
+                
+                const jobDescription = `${application.job.title}\n${application.job.description}`;
+                const atsResult = calculateScore(parsedData, jobDescription, settings, application.job.title);
+
+                application.atsEvaluation = atsResult;
+                application.aiEvaluation = {
+                    matchScore: atsResult.atsScore,
+                    matchPercentage: atsResult.atsScore,
+                    recommendation: atsResult.atsScore >= settings.thresholdScore ? 'Strong' : (atsResult.atsScore >= 50 ? 'Moderate' : 'Weak'),
+                    lastEvaluated: new Date()
+                };
+
+                await application.save();
+                res.json(application);
             } catch (e) {
-                console.warn('Could not read resume PDF for evaluation:', e.message);
+                console.error('ATS Evaluation Error:', e.message);
+                res.status(500).json({ error: 'ATS evaluation failed: ' + e.message });
             }
+        } else {
+             res.status(400).json({ error: 'No resume found' });
         }
-
-        const jobRequirements = `${application.job.title}\n${application.job.description}`;
-        const evaluation = await rankCandidateForJob(jobRequirements, candidateProfile);
-
-        application.aiEvaluation = {
-            matchScore: evaluation.matchScore,
-            skillMatchScore: evaluation.skillMatchScore,
-            experienceMatchScore: evaluation.experienceMatchScore,
-            matchPercentage: evaluation.matchScore, // legacy
-            strengthSummary: evaluation.strengthSummary,
-            riskFactors: evaluation.riskFactors,
-            recommendation: evaluation.recommendation,
-            lastEvaluated: new Date()
-        };
-
-        await application.save();
-        res.json(application);
     } catch (error) {
-        console.error('AI Evaluation Error:', error);
-        res.status(500).json({ error: 'AI evaluation failed: ' + error.message });
+        console.error('Evaluation Error:', error);
+        res.status(500).json({ error: 'Evaluation failed: ' + error.message });
     }
 });
 
-// AI Rank all applicants for a job (recruiter)
+// ATS Rank all applicants for a job (recruiter)
 router.post('/job/:jobId/ai-rank', auth, authorize('recruiter'), async (req, res) => {
     try {
         const applications = await Application.find({ job: req.params.jobId })
@@ -160,48 +155,40 @@ router.post('/job/:jobId/ai-rank', auth, authorize('recruiter'), async (req, res
             return res.status(400).json({ error: 'No applicants to rank' });
         }
 
+        let settings = await ATSSettings.findOne({});
+        if (!settings) settings = new ATSSettings(); // Provide defaults
+
         let rankedCount = 0;
         for (const app of applications) {
             try {
                 const studentProfile = app.student?.studentProfile || {};
                 const resumeUrl = app.resumeUrl || studentProfile.resumeUrl;
 
-                const candidateProfile = {
-                    name: app.student.name,
-                    department: studentProfile.department || 'CS',
-                    cgpa: studentProfile.cgpa || 0,
-                    skills: studentProfile.skills || [],
-                    resumeScore: studentProfile.aiResumeAnalysis?.resumeScore || studentProfile.aiResumeAnalysis?.score || 0,
-                    additionalInfo: `CGPA: ${studentProfile.cgpa || 'N/A'}`
-                };
+                if (!resumeUrl) continue;
 
-                // Include resume text if available
-                if (resumeUrl) {
-                    try {
-                        const filePath = path.join(__dirname, '../', resumeUrl);
-                        const resumeText = await extractTextFromPDF(filePath);
-                        candidateProfile.additionalInfo += '\n' + resumeText.slice(0, 1000);
-                    } catch (e) {
-                        console.warn(`Could not read resume for ${app.student.name}:`, e.message);
-                    }
+                let parsedData;
+                try {
+                    parsedData = await parseResumeFile(studentProfile.resumeBase64 || resumeUrl);
+                } catch (e) {
+                    console.warn(`Could not read/parse resume for ${app.student.name}:`, e.message);
+                    continue;
                 }
 
-                const jobRequirements = `${app.job.title}\n${app.job.description}`;
-                const evalResult = await rankCandidateForJob(jobRequirements, candidateProfile);
+                const jobDescription = `${app.job.title}\n${app.job.description}`;
+                const atsResult = calculateScore(parsedData, jobDescription, settings, app.job.title);
 
+                app.atsEvaluation = atsResult;
                 app.aiEvaluation = {
-                    matchScore: evalResult.matchScore,
-                    skillMatchScore: evalResult.skillMatchScore,
-                    experienceMatchScore: evalResult.experienceMatchScore,
-                    matchPercentage: evalResult.matchScore, // legacy
-                    strengthSummary: evalResult.strengthSummary,
-                    riskFactors: evalResult.riskFactors,
-                    recommendation: evalResult.recommendation,
+                    matchScore: atsResult.atsScore,
+                    matchPercentage: atsResult.atsScore,
+                    recommendation: atsResult.atsScore >= settings.thresholdScore ? 'Strong' : (atsResult.atsScore >= 50 ? 'Moderate' : 'Weak'),
+                    strengthSummary: atsResult.suggestions?.length ? atsResult.suggestions.join('. ') : 'Good match.',
                     lastEvaluated: new Date()
                 };
+
                 await app.save();
                 rankedCount++;
-                console.log(`✅ Ranked ${app.student.name}: ${evalResult.matchScore}% match (${evalResult.recommendation})`);
+                console.log(`✅ Ranked ${app.student.name}: ${atsResult.atsScore}% match`);
             } catch (err) {
                 console.error(`❌ Failed to evaluate application ${app._id}:`, err.message);
             }
@@ -211,10 +198,10 @@ router.post('/job/:jobId/ai-rank', auth, authorize('recruiter'), async (req, res
             .populate('student', 'name email studentProfile')
             .sort('-aiEvaluation.matchScore');
 
-        console.log(`AI Ranking complete: ${rankedCount}/${applications.length} applicants evaluated`);
+        console.log(`ATS Ranking complete: ${rankedCount}/${applications.length} applicants evaluated`);
         res.json(rankedApps);
     } catch (error) {
-        console.error('AI Rank Error:', error);
+        console.error('ATS Rank Error:', error);
         res.status(500).json({ error: 'Ranking failed: ' + error.message });
     }
 });

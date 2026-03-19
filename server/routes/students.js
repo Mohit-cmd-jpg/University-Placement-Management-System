@@ -113,6 +113,12 @@ router.post('/resume', auth, authorize('student'), upload.single('resume'), asyn
         try {
             const text = await extractTextFromPDF(fileBuffer);
             const user = await User.findById(req.user._id);
+
+            // Trigger the new ATS Mock parsing just to store student metrics 
+            // We don't have a job yet, but this gives them basic parsed attributes.
+            const { parseResumeFile } = require('../services/resumeParser');
+            const parsedData = await parseResumeFile(base64String);
+
             const analysis = await analyzeResume(text, user.studentProfile);
 
             // Save historical record to ResumeAnalysis collection
@@ -132,6 +138,7 @@ router.post('/resume', auth, authorize('student'), upload.single('resume'), asyn
 
             // Update latest on User profile
             await User.findByIdAndUpdate(req.user._id, {
+                'studentProfile.parsedResumeData': parsedData,
                 'studentProfile.aiResumeAnalysis': {
                     resumeScore: analysis.resumeScore,
                     technicalSkillsScore: analysis.technicalSkillsScore,

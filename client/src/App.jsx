@@ -36,6 +36,7 @@ import AdminAnnouncements from './pages/admin/Announcements';
 import AdminReports from './pages/admin/Reports';
 import AdminProfile from './pages/admin/Profile';
 import AdminManagement from './pages/admin/Admins';
+import AdminATSPanel from './components/AdminATSPanel';
 
 // Shared
 import Notifications from './pages/Notifications';
@@ -85,6 +86,7 @@ function App() {
             <Route path="/admin/admins" element={<ProtectedRoute roles={['admin']}><AdminManagement /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute roles={['admin']}><AdminReports /></ProtectedRoute>} />
             <Route path="/admin/profile" element={<ProtectedRoute roles={['admin']}><AdminProfile /></ProtectedRoute>} />
+            <Route path="/admin/ats-settings" element={<ProtectedRoute roles={['admin']}><AdminATSPanel /></ProtectedRoute>} />
             <Route path="/admin/notifications" element={<ProtectedRoute roles={['admin']}><Notifications /></ProtectedRoute>} />
 
             {/* Catch-all */}

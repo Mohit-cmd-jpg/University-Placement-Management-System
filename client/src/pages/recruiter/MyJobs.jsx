@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import { jobAPI, applicationAPI, FILE_BASE_URL } from '../../services/api';
 import toast from 'react-hot-toast';
+import ATSScoreCard from '../../components/ATSScoreCard';
 
 const statusColors = { pending: 'badge-warning', approved: 'badge-success', rejected: 'badge-danger' };
 const appStatusColors = { applied: 'badge-info', shortlisted: 'badge-warning', interview: 'badge-primary', selected: 'badge-success', rejected: 'badge-danger' };
@@ -386,8 +387,22 @@ const MyJobs = () => {
                                 </div>
                             )}
 
-                            {/* AI Evaluation (if available) */}
-                            {selectedCandidate.aiEvaluation?.matchScore > 0 && (
+                            {/* ATS Match / AI Evaluation (if available) */}
+                            {selectedCandidate.atsEvaluation ? (
+                                <div style={{ marginTop: '1.5rem' }}>
+                                    <ATSScoreCard result={selectedCandidate.atsEvaluation} />
+                                    {selectedCandidate.aiEvaluation?.recommendation && (() => {
+                                        const recStyle = recommendationColors[selectedCandidate.aiEvaluation.recommendation];
+                                        return (
+                                            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+                                                <span style={{ padding: '0.4rem 1rem', borderRadius: '99px', fontWeight: 700, fontSize: '0.85rem', background: recStyle.bg, color: recStyle.color, border: `1px solid ${recStyle.border}` }}>
+                                                    {selectedCandidate.aiEvaluation.recommendation} Candidate
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            ) : selectedCandidate.aiEvaluation?.matchScore > 0 && (
                                 <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(14,165,233,0.08))', borderRadius: '10px', padding: '1.25rem', border: '1px solid rgba(99,102,241,0.2)' }}>
                                     <h4 style={{ marginTop: 0, marginBottom: '1rem', color: 'var(--primary)' }}>🤖 AI Evaluation</h4>
                                     
