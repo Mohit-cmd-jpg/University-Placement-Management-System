@@ -26,6 +26,12 @@ api.interceptors.response.use(
             localStorage.removeItem('user');
             if (window.location.pathname !== '/login') window.location.href = '/login';
         }
+
+        // Normalize serverless / gateway error objects (e.g. Vercel timeouts) to prevent React #31 child rendering errors
+        if (err.response && err.response.data && typeof err.response.data.error === 'object') {
+            err.response.data.error = err.response.data.error.message || JSON.stringify(err.response.data.error);
+        }
+
         return Promise.reject(err);
     }
 );
