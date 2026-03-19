@@ -7,6 +7,16 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
 
+// Validate critical environment variables
+if (!process.env.MONGODB_URI) {
+  console.error('ERROR: MONGODB_URI is not set. Startup halted.');
+  process.exit(1);
+}
+if (!process.env.JWT_SECRET) {
+  console.error('ERROR: JWT_SECRET is not set. Startup halted.');
+  process.exit(1);
+}
+
 const app = express();
 
 // Security middleware
@@ -99,8 +109,8 @@ app.use((req, res) => {
 });
 
 // Initialize expiry check service (runs on startup and periodically)
-if (process.env.NODE_ENV !== 'production' || require.main === module) {
-  const { setupExpiryCheckInterval } = require('./services/expiryService');
+// Only run in local dev, NOT in Vercel production (serverless can't maintain intervals)
+if (process.env.NODE_ENV !== 'production' && require.main === module) {
   // Run expiry check every 1 hour
   setupExpiryCheckInterval(60 * 60 * 1000);
 }
