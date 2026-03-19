@@ -5,8 +5,8 @@ const { parseResumeFile } = require('../services/resumeParser');
 const { calculateScore } = require('../utils/atsScorer');
 const ATSSettings = require('../models/ATSSettings');
 
-// Temporary setup for file uploads
-const upload = multer({ dest: 'uploads/' });
+// Use memory storage for Vercel serverless (read-only filesystem)
+const upload = multer({ storage: multer.memoryStorage() });
 
 /**
  * POST /api/resume/scan 
@@ -21,8 +21,8 @@ router.post('/scan', upload.single('resume'), async (req, res) => {
       return res.status(400).json({ error: 'Resume file and job description are required.' });
     }
 
-    // Parse the file
-    const parsedData = await parseResumeFile(file.path);
+    // Parse the file (use buffer instead of path for serverless compatibility)
+    const parsedData = await parseResumeFile(file.buffer || file.path);
     
     // Get ATS settings
     let settings = await ATSSettings.findOne({});
