@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Layout from '../../components/Layout';
 import { adminAPI, studentAPI, jobAPI, applicationAPI } from '../../services/api';
 
@@ -264,172 +265,177 @@ const AdminReports = () => {
                     </div>
                 </div>
 
-                {/* Data View Modal */}
-                {selectedView && (
-                    <div style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 1000
-                    }}>
-                        <div className="card" style={{ width: '95%', maxWidth: '1000px', maxHeight: '90vh', overflowY: 'auto' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <h3>{viewTitle}</h3>
-                                <button onClick={() => setSelectedView(null)} style={{ fontSize: '1.5rem', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
-                            </div>
+                {/* Data View Modal - Rendered via Portal for full screen centering */}
+            </div>
 
-                            {viewLoading ? (
-                                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                                    <div className="spinner"></div>
-                                    <p>Loading data...</p>
-                                </div>
-                            ) : (
-                                <>
-                                    {/* Students View */}
-                                    {selectedView === 'students' && (
-                                        <div style={{ overflowX: 'auto' }}>
-                                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                                <thead>
-                                                    <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Name</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Email</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Department</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>CGPA</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {viewData.length === 0 ? (
-                                                        <tr>
-                                                            <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No students found</td>
-                                                        </tr>
-                                                    ) : (
-                                                        viewData.map((student, idx) => (
-                                                            <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                                                                <td style={{ padding: '1rem' }}><strong>{student.name}</strong></td>
-                                                                <td style={{ padding: '1rem' }}>{student.email}</td>
-                                                                <td style={{ padding: '1rem' }}>{student.studentProfile?.department || 'N/A'}</td>
-                                                                <td style={{ padding: '1rem' }}>{student.studentProfile?.cgpa || 'N/A'}</td>
-                                                                <td style={{ padding: '1rem' }}>
-                                                                    <span style={{
-                                                                        padding: '0.25rem 0.75rem',
-                                                                        borderRadius: '20px',
-                                                                        fontSize: '0.85rem',
-                                                                        fontWeight: 600,
-                                                                        backgroundColor: student.studentProfile?.isPlaced ? '#10b98140' : '#ef444440',
-                                                                        color: student.studentProfile?.isPlaced ? '#10b981' : '#ef4444'
-                                                                    }}>
-                                                                        {student.studentProfile?.isPlaced ? 'Placed' : 'Unplaced'}
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        ))
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-
-                                    {/* Jobs View */}
-                                    {selectedView === 'jobs' && (
-                                        <div style={{ overflowX: 'auto' }}>
-                                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                                <thead>
-                                                    <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Job Title</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Company</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Posted By</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Salary</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {viewData.length === 0 ? (
-                                                        <tr>
-                                                            <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No jobs found</td>
-                                                        </tr>
-                                                    ) : (
-                                                        viewData.map((job, idx) => (
-                                                            <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                                                                <td style={{ padding: '1rem' }}><strong>{job.title}</strong></td>
-                                                                <td style={{ padding: '1rem' }}>{job.company}</td>
-                                                                <td style={{ padding: '1rem' }}>{typeof job.postedBy === 'object' ? job.postedBy.name : 'N/A'}</td>
-                                                                <td style={{ padding: '1rem' }}>{job.salary ? `₹ ${job.salary}` : 'Negotiable'}</td>
-                                                                <td style={{ padding: '1rem' }}>
-                                                                    <span style={{
-                                                                        padding: '0.25rem 0.75rem',
-                                                                        borderRadius: '20px',
-                                                                        fontSize: '0.85rem',
-                                                                        fontWeight: 600,
-                                                                        backgroundColor: job.status === 'approved' ? '#10b98140' : job.status === 'pending' ? '#f59e0b40' : '#ef444440',
-                                                                        color: job.status === 'approved' ? '#10b981' : job.status === 'pending' ? '#f59e0b' : '#ef4444'
-                                                                    }}>
-                                                                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        ))
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-
-                                    {/* Applications View */}
-                                    {selectedView === 'applications' && (
-                                        <div style={{ overflowX: 'auto' }}>
-                                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                                <thead>
-                                                    <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Student</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Job</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Company</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Applied Date</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {viewData.length === 0 ? (
-                                                        <tr>
-                                                            <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No applications found</td>
-                                                        </tr>
-                                                    ) : (
-                                                        viewData.map((app, idx) => (
-                                                            <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                                                                <td style={{ padding: '1rem' }}><strong>{app.student?.name || 'N/A'}</strong></td>
-                                                                <td style={{ padding: '1rem' }}>{app.job?.title || 'N/A'}</td>
-                                                                <td style={{ padding: '1rem' }}>{app.job?.company || 'N/A'}</td>
-                                                                <td style={{ padding: '1rem' }}>{new Date(app.appliedAt).toLocaleDateString()}</td>
-                                                                <td style={{ padding: '1rem' }}>
-                                                                    <span style={{
-                                                                        padding: '0.25rem 0.75rem',
-                                                                        borderRadius: '20px',
-                                                                        fontSize: '0.85rem',
-                                                                        fontWeight: 600,
-                                                                        backgroundColor: app.status === 'selected' ? '#10b98140' : app.status === 'rejected' ? '#ef444440' : app.status === 'shortlisted' ? '#3b82f640' : '#f59e0b40',
-                                                                        color: app.status === 'selected' ? '#10b981' : app.status === 'rejected' ? '#ef4444' : app.status === 'shortlisted' ? '#3b82f6' : '#f59e0b'
-                                                                    }}>
-                                                                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        ))
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-                                </>
-                            )}
+            {/* Modal Portal - Renders outside the Layout hierarchy */}
+            {selectedView && createPortal(
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div className="card" style={{ width: '95%', maxWidth: '1000px', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3>{viewTitle}</h3>
+                            <button onClick={() => setSelectedView(null)} style={{ fontSize: '1.5rem', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
                         </div>
+
+                        {viewLoading ? (
+                            <div style={{ textAlign: 'center', padding: '2rem' }}>
+                                <div className="spinner"></div>
+                                <p>Loading data...</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Students View */}
+                                {selectedView === 'students' && (
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Name</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Email</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Department</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>CGPA</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {viewData.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No students found</td>
+                                                    </tr>
+                                                ) : (
+                                                    viewData.map((student, idx) => (
+                                                        <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
+                                                            <td style={{ padding: '1rem' }}><strong>{student.name}</strong></td>
+                                                            <td style={{ padding: '1rem' }}>{student.email}</td>
+                                                            <td style={{ padding: '1rem' }}>{student.studentProfile?.department || 'N/A'}</td>
+                                                            <td style={{ padding: '1rem' }}>{student.studentProfile?.cgpa || 'N/A'}</td>
+                                                            <td style={{ padding: '1rem' }}>
+                                                                <span style={{
+                                                                    padding: '0.25rem 0.75rem',
+                                                                    borderRadius: '20px',
+                                                                    fontSize: '0.85rem',
+                                                                    fontWeight: 600,
+                                                                    backgroundColor: student.studentProfile?.isPlaced ? '#10b98140' : '#ef444440',
+                                                                    color: student.studentProfile?.isPlaced ? '#10b981' : '#ef4444'
+                                                                }}>
+                                                                    {student.studentProfile?.isPlaced ? 'Placed' : 'Unplaced'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+
+                                {/* Jobs View */}
+                                {selectedView === 'jobs' && (
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Job Title</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Company</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Posted By</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Salary</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {viewData.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No jobs found</td>
+                                                    </tr>
+                                                ) : (
+                                                    viewData.map((job, idx) => (
+                                                        <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
+                                                            <td style={{ padding: '1rem' }}><strong>{job.title}</strong></td>
+                                                            <td style={{ padding: '1rem' }}>{job.company}</td>
+                                                            <td style={{ padding: '1rem' }}>{typeof job.postedBy === 'object' ? job.postedBy.name : 'N/A'}</td>
+                                                            <td style={{ padding: '1rem' }}>{job.salary ? `₹ ${job.salary}` : 'Negotiable'}</td>
+                                                            <td style={{ padding: '1rem' }}>
+                                                                <span style={{
+                                                                    padding: '0.25rem 0.75rem',
+                                                                    borderRadius: '20px',
+                                                                    fontSize: '0.85rem',
+                                                                    fontWeight: 600,
+                                                                    backgroundColor: job.status === 'approved' ? '#10b98140' : job.status === 'pending' ? '#f59e0b40' : '#ef444440',
+                                                                    color: job.status === 'approved' ? '#10b981' : job.status === 'pending' ? '#f59e0b' : '#ef4444'
+                                                                }}>
+                                                                    {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+
+                                {/* Applications View */}
+                                {selectedView === 'applications' && (
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Student</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Job</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Company</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Applied Date</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {viewData.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No applications found</td>
+                                                    </tr>
+                                                ) : (
+                                                    viewData.map((app, idx) => (
+                                                        <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
+                                                            <td style={{ padding: '1rem' }}><strong>{app.student?.name || 'N/A'}</strong></td>
+                                                            <td style={{ padding: '1rem' }}>{app.job?.title || 'N/A'}</td>
+                                                            <td style={{ padding: '1rem' }}>{app.job?.company || 'N/A'}</td>
+                                                            <td style={{ padding: '1rem' }}>{new Date(app.appliedAt).toLocaleDateString()}</td>
+                                                            <td style={{ padding: '1rem' }}>
+                                                                <span style={{
+                                                                    padding: '0.25rem 0.75rem',
+                                                                    borderRadius: '20px',
+                                                                    fontSize: '0.85rem',
+                                                                    fontWeight: 600,
+                                                                    backgroundColor: app.status === 'selected' ? '#10b98140' : app.status === 'rejected' ? '#ef444440' : app.status === 'shortlisted' ? '#3b82f640' : '#f59e0b40',
+                                                                    color: app.status === 'selected' ? '#10b981' : app.status === 'rejected' ? '#ef4444' : app.status === 'shortlisted' ? '#3b82f6' : '#f59e0b'
+                                                                }}>
+                                                                    {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
-                )}
+                </div>,
+                document.body
+            )}
+        </Layout>
             </div>
         </Layout>
     );
