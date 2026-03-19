@@ -436,8 +436,6 @@ const AdminReports = () => {
                 document.body
             )}
         </Layout>
-            </div>
-        </Layout>
     );
 };
 
