@@ -14,7 +14,6 @@ const AdminReports = () => {
     
     // Export modal state
     const [showExportModal, setShowExportModal] = useState(false);
-    const [exportFormat, setExportFormat] = useState('json');
     const [selectedDataTypes, setSelectedDataTypes] = useState({
         students: true,
         placements: true,
@@ -115,7 +114,7 @@ const AdminReports = () => {
             }
 
             // Fetch with proper authentication header
-            const response = await fetch(`/api/admin/export/raw?dataTypes=${selectedTypes}&format=${exportFormat}`, {
+            const response = await fetch(`/api/admin/export/raw?dataTypes=${selectedTypes}&format=json`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -139,13 +138,13 @@ const AdminReports = () => {
             const blobUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = blobUrl;
-            link.download = `raw_export_${new Date().toISOString().split('T')[0]}.${exportFormat === 'csv' ? 'csv' : 'json'}`;
+            link.download = `raw_export_${new Date().toISOString().split('T')[0]}.json`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(blobUrl);
             
-            toast.success(`✅ ${exportFormat.toUpperCase()} export downloaded!`);
+            toast.success('✅ JSON export downloaded!');
             setShowExportModal(false);
         } catch (error) {
             console.error('Export error:', error);
@@ -514,33 +513,18 @@ const AdminReports = () => {
                         
                         <div style={{ marginBottom: '1.5rem' }}>
                             <label style={{ fontWeight: 600, marginBottom: '0.75rem', display: 'block', color: 'var(--primary)' }}>Select Data Types:</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 {Object.keys(selectedDataTypes).map(type => (
-                                    <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem', borderRadius: '6px', background: 'var(--bg-dark)', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-light)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-dark)'}>
-                                        <input type="checkbox" checked={selectedDataTypes[type]} onChange={() => handleDataTypeToggle(type)} style={{ cursor: 'pointer' }} />
+                                    <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.75rem', borderRadius: '6px', background: 'var(--bg-dark)', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-light)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-dark)'}>
+                                        <input type="checkbox" checked={selectedDataTypes[type]} onChange={() => handleDataTypeToggle(type)} style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
                                         <span style={{ fontSize: '0.9rem', textTransform: 'capitalize' }}>{type.replace(/([A-Z])/g, ' $1').trim()}</span>
                                     </label>
                                 ))}
                             </div>
                         </div>
 
-                        <div style={{ marginBottom: '1.5rem' }}>
-                            <label style={{ fontWeight: 600, marginBottom: '0.75rem', display: 'block', color: 'var(--primary)' }}>Export Format:</label>
-                            <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                <label style={{ flex: 1, padding: '0.75rem', borderRadius: '6px', border: exportFormat === 'json' ? '2px solid var(--primary)' : '1px solid var(--border)', background: exportFormat === 'json' ? 'rgba(99,102,241,0.1)' : 'var(--bg-dark)', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
-                                    <input type="radio" value="json" checked={exportFormat === 'json'} onChange={e => setExportFormat(e.target.value)} style={{ marginRight: '0.5rem', cursor: 'pointer' }} />
-                                    JSON (Raw)
-                                </label>
-                                <label style={{ flex: 1, padding: '0.75rem', borderRadius: '6px', border: exportFormat === 'csv' ? '2px solid var(--primary)' : '1px solid var(--border)', background: exportFormat === 'csv' ? 'rgba(99,102,241,0.1)' : 'var(--bg-dark)', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
-                                    <input type="radio" value="csv" checked={exportFormat === 'csv'} onChange={e => setExportFormat(e.target.value)} style={{ marginRight: '0.5rem', cursor: 'pointer' }} />
-                                    CSV (Tabular)
-                                </label>
-                            </div>
-                        </div>
-
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                            📊 <strong>JSON Format:</strong> Complete MongoDB documents as-is with all nested fields. Perfect for data analysis, archiving, or importing to other systems.<br/>
-                            📋 <strong>CSV Format:</strong> Tabular format for Excel/spreadsheet viewing. Nested objects will be stringified.
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                            📊 <strong>JSON Format:</strong> Complete MongoDB documents as-is with all nested fields. Perfect for data analysis, archiving, or importing to other systems.
                         </p>
 
                         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>

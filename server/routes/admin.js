@@ -735,75 +735,26 @@ router.get('/export/raw', auth, authorize('admin'), async (req, res) => {
             console.log(`[EXPORT] Fetched ${announcements.length} announcements`);
         }
 
-        // Return as JSON or CSV
-        if (format === 'csv') {
-            // Convert to CSV format - FLATTENED for readability
-            let csv = '';
-            
-            // Helper function to get simple (non-object) fields from a record
-            const getSimpleFields = (record) => {
-                const simple = {};
-                for (const [key, val] of Object.entries(record)) {
-                    if (val === null || val === undefined) {
-                        simple[key] = '';
-                    } else if (typeof val !== 'object') {
-                        simple[key] = val;
-                    }
-                    // Skip objects and arrays - too complex for CSV
-                }
-                return simple;
-            };
-            
-            for (const [dataType, records] of Object.entries(exportData)) {
-                if (!records || records.length === 0) continue;
-                
-                csv += `\n\n--- ${dataType.toUpperCase()} (${records.length} records) ---\n`;
-                
-                // Get simple headers only (skip nested objects)
-                const flattenedRecords = records.map(record => getSimpleFields(record));
-                
-                if (flattenedRecords[0]) {
-                    const headers = Object.keys(flattenedRecords[0]);
-                    csv += headers.map(h => `"${h}"`).join(',') + '\n';
-                    
-                    // Add data rows
-                    flattenedRecords.forEach(record => {
-                        csv += headers.map(h => {
-                            const val = record[h];
-                            if (val === null || val === undefined) return '';
-                            if (typeof val === 'string' && (val.includes(',') || val.includes('"') || val.includes('\n'))) {
-                                return `"${val.replace(/"/g, '""')}"`;  // Proper CSV escaping
-                            }
-                            if (typeof val === 'string') return `"${val}"`;
-                            return String(val);
-                        }).join(',') + '\n';
-                    });
-                }
-            }
-            
-            res.setHeader('Content-Type', 'text/csv;charset=utf-8');
-            res.setHeader('Content-Disposition', `attachment;filename=raw_export_${new Date().toISOString().split('T')[0]}.csv`);
-            console.log(`[EXPORT] Returning CSV file (simplified/flattened)`);
-            res.send(csv);
-        } else {
-            // JSON format (default) - with better structure
-            const exportWithMetadata = {
-                metadata: {
-                    exportDate: new Date().toISOString(),
-                    exportedBy: req.user.email,
-                    dataTypes: Object.keys(exportData)
-                },
-                recordCounts: Object.fromEntries(
-                    Object.entries(exportData).map(([key, val]) => [key, Array.isArray(val) ? val.length : 0])
-                ),
-                data: exportData
-            };
-            
-            res.setHeader('Content-Type', 'application/json');
-            res.setHeader('Content-Disposition', `attachment;filename=raw_export_${new Date().toISOString().split('T')[0]}.json`);
-            console.log(`[EXPORT] Returning JSON file (with metadata)`);
-            res.json(exportWithMetadata);
-        }
+        // Return as JSON (only format supported now)
+        const exportWithMetadata = {
+            metadata: {
+                exportDate: new Date().toISOString(),
+                exportedBy: req.user.email,
+                dataTypes: Object.keys(exportData)
+            },
+            recordCounts: Object.fromEntries(
+                Object.entries(exportData).map(([key, val]) => [key, Array.isArray(val) ? val.length : 0])
+            ),
+            data: exportData
+        };
+        
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment;filename=raw_export_${new Date().toISOString().split('T')[0]}.json`);
+        console.log(`[EXPORT] Returning JSON file with ${Object.keys(exportData).length} data types`);
+        
+        // Return with pretty-printing (indentation of 2 spaces)
+        res.set('Content-Type', 'application/json');
+        res.send(JSON.stringify(exportWithMetadata, null, 2));
     } catch (error) {
         console.error('[EXPORT] Error:', error);
         res.status(500).json({ error: 'Export failed', details: error.message });
