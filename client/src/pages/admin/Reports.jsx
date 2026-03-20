@@ -158,38 +158,167 @@ const AdminReports = () => {
         if (!data) return;
 
         const lines = [];
+        const escapeCSV = (str) => {
+            if (!str) return '';
+            if (typeof str !== 'string') str = String(str);
+            return str.includes(',') || str.includes('"') || str.includes('\n') 
+                ? `"${str.replace(/"/g, '""')}"` 
+                : `"${str}"`;
+        };
 
-        // --- Section 1: Placement Summary ---
-        lines.push("--- PLACEMENT SUMMARY ---");
-        lines.push("Branch,Total Students,Placed Students,Placement Rate (%)");
+        // ===== EXECUTIVE SUMMARY =====
+        lines.push('PLACEMENT ANALYTICS REPORT');
+        lines.push(`Generated: ${new Date().toLocaleString()}`);
+        lines.push('');
+        
+        lines.push('EXECUTIVE SUMMARY');
+        lines.push('Metric,Value,Target,Status');
+        const placementRate = ((data.overview.placedStudents / Math.max(data.overview.totalStudents, 1)) * 100).toFixed(2);
+        lines.push(`Overall Placement Rate,${placementRate}%,80%,${placementRate >= 80 ? 'Good' : 'Needs Improvement'}`);
+        lines.push(`Total Students,${data.overview.totalStudents},N/A,N/A`);
+        lines.push(`Placed Students,${data.overview.placedStudents},N/A,N/A`);
+        lines.push(`Unplaced Students,${data.overview.unplacedStudents},N/A,N/A`);
+        lines.push(`Verified Students,${data.overview.verifiedStudents},N/A,N/A`);
+        lines.push(`Total Recruiters,${data.overview.totalRecruiters},N/A,N/A`);
+        lines.push(`Active Jobs,${data.overview.approvedJobs},N/A,N/A`);
+        lines.push(`Total Applications,${data.overview.totalApplications},N/A,N/A`);
+        lines.push('');
+
+        // ===== BRANCH-WISE PLACEMENT ANALYSIS =====
+        lines.push('DEPARTMENT-WISE PLACEMENT ANALYSIS');
+        lines.push('Department,Total Students,Placed,Unplaced,Placement Rate (%),Performance');
         (data.branchStats || []).forEach(b => {
-            lines.push(`${b._id || 'N/A'},${b.total},${b.placed},${Math.round((b.placed / Math.max(b.total, 1)) * 100)}%`);
+            const rate = ((b.placed / Math.max(b.total, 1)) * 100).toFixed(1);
+            let performance = 'Excellent';
+            if (rate < 60) performance = 'Poor';
+            else if (rate < 70) performance = 'Below Average';
+            else if (rate < 80) performance = 'Average';
+            else if (rate < 90) performance = 'Good';
+            
+            lines.push(`${b._id || 'N/A'},${b.total},${b.placed},${b.total - b.placed},${rate},${performance}`);
         });
-        lines.push("\n");
+        lines.push('');
 
-        // --- Section 2: Student Master List ---
-        lines.push("--- STUDENT MASTER LIST ---");
-        lines.push("Name,Email,Department,CGPA,Status,Placement Company,Applications Sent");
-        (data.studentDetails || []).forEach(s => {
-            lines.push(`"${s.name}","${s.email}","${s.studentProfile?.department || 'N/A'}",${s.studentProfile?.cgpa || 0},${s.status},"${s.placedAt || 'N/A'}",${s.applicationCount || 0}`);
+        // ===== HIGH PERFORMING STUDENTS =====
+        lines.push('TOP PERFORMERS (CGPA >= 8.0)');
+        lines.push('Name,Email,Department,CGPA,Status,Company,Applications');
+        const topStudents = (data.studentDetails || [])
+            .filter(s => (s.studentProfile?.cgpa || 0) >= 8.0)
+            .sort((a, b) => (b.studentProfile?.cgpa || 0) - (a.studentProfile?.cgpa || 0))
+            .slice(0, 10);
+        topStudents.forEach(s => {
+            lines.push(`${escapeCSV(s.name)},${escapeCSV(s.email)},${escapeCSV(s.studentProfile?.department || 'N/A')},${(s.studentProfile?.cgpa || 0).toFixed(2)},${s.status},${escapeCSV(s.placedAt || 'N/A')},${s.applicationCount || 0}`);
         });
-        lines.push("\n");
+        lines.push('');
 
-        // --- Section 3: Recruiter Performance ---
-        lines.push("--- RECRUITER PERFORMANCE ---");
-        lines.push("Name,Email,Company,Jobs Posted,Successful Hires");
-        (data.recruiterDetails || []).forEach(r => {
-            lines.push(`"${r.name}","${r.email}","${r.company || 'N/A'}",${r.jobsPosted || 0},${r.totalHires || 0}`);
+        // ===== AT-RISK STUDENTS (Unplaced with low applications) =====
+        lines.push('AT-RISK STUDENTS (Unplaced with Low Activity)');
+        lines.push('Name,Email,Department,CGPA,Applications Sent,Recommendation');
+        const atRiskStudents = (data.studentDetails || [])
+            .filter(s => !s.studentProfile?.isPlaced && (s.applicationCount || 0) < 5)
+            .sort((a, b) => (a.applicationCount || 0) - (b.applicationCount || 0))
+            .slice(0, 10);
+        atRiskStudents.forEach(s => {
+            const recommendation = (s.applicationCount || 0) === 0 ? 'Urgent: No applications' : 'Low engagement - encourage more applications';
+            lines.push(`${escapeCSV(s.name)},${escapeCSV(s.email)},${escapeCSV(s.studentProfile?.department || 'N/A')},${(s.studentProfile?.cgpa || 0).toFixed(2)},${s.applicationCount || 0},${recommendation}`);
         });
+        lines.push('');
 
-        const csvContent = "data:text/csv;charset=utf-8," + lines.join("\n");
+        // ===== TOP HIRING COMPANIES =====
+        lines.push('TOP RECRUITING COMPANIES');
+        lines.push('Company,Students Hired,Hiring Rate (%)');
+        const totalPlaced = data.overview.placedStudents || 1;
+        (data.companyStats || []).slice(0, 15).forEach(c => {
+            const rate = ((c.count / totalPlaced) * 100).toFixed(1);
+            lines.push(`${escapeCSV(c._id || 'Standard Hire')},${c.count},${rate}`);
+        });
+        lines.push('');
+
+        // ===== TOP PERFORMING RECRUITERS =====
+        lines.push('TOP PERFORMING RECRUITERS');
+        lines.push('Recruiter Name,Company,Jobs Posted,Successful Hires,Conversion Rate (%)');
+        const topRecruiters = (data.recruiterDetails || [])
+            .filter(r => r.jobsPosted > 0)
+            .map(r => ({
+                ...r,
+                conversionRate: ((r.totalHires / Math.max(r.jobsPosted, 1)) * 100).toFixed(1)
+            }))
+            .sort((a, b) => parseFloat(b.conversionRate) - parseFloat(a.conversionRate))
+            .slice(0, 10);
+        topRecruiters.forEach(r => {
+            lines.push(`${escapeCSV(r.name)},${escapeCSV(r.company || 'N/A')},${r.jobsPosted},${r.totalHires},${r.conversionRate}`);
+        });
+        lines.push('');
+
+        // ===== APPLICATION FUNNEL ANALYSIS =====
+        lines.push('APPLICATION STATUS BREAKDOWN');
+        lines.push('Status,Count,Percentage (%)');
+        const totalApps = data.overview.totalApplications || 1;
+        (data.applicationStats || []).forEach(s => {
+            const percent = ((s.count / totalApps) * 100).toFixed(1);
+            lines.push(`${escapeCSV(s._id || 'Unknown')},${s.count},${percent}`);
+        });
+        lines.push('');
+
+        // ===== JOB MARKET INSIGHTS =====
+        lines.push('JOB MARKET INSIGHTS');
+        lines.push('Metric,Count');
+        lines.push(`Total Jobs Posted,${data.overview.totalJobs}`);
+        lines.push(`Approved Jobs,${data.overview.approvedJobs}`);
+        lines.push(`Pending Jobs,${data.overview.pendingJobs}`);
+        const avgJobsPerRecruiter = (data.overview.totalJobs / Math.max(data.overview.totalRecruiters, 1)).toFixed(2);
+        lines.push(`Avg Jobs per Recruiter,${avgJobsPerRecruiter}`);
+        const appsPerJob = (data.overview.totalApplications / Math.max(data.overview.totalJobs, 1)).toFixed(2);
+        lines.push(`Avg Applications per Job,${appsPerJob}`);
+        lines.push('');
+
+        // ===== KEY RECOMMENDATIONS =====
+        lines.push('KEY RECOMMENDATIONS & INSIGHTS');
+        lines.push('Finding,Impact,Action Item');
+        
+        // Recommendation 1: Department Performance
+        const lowestDept = (data.branchStats || []).reduce((a, b) => 
+            ((a.placed / Math.max(a.total, 1)) < (b.placed / Math.max(b.total, 1)) ? a : b)
+        , data.branchStats?.[0] || {});
+        if (lowestDept._id) {
+            const lowestRate = ((lowestDept.placed / Math.max(lowestDept.total, 1)) * 100).toFixed(0);
+            lines.push(`${lowestDept._id} has lowest placement rate,High,Focus on skill development and mock interviews`);
+        }
+        
+        // Recommendation 2: Unplaced Students
+        lines.push(`${data.overview.unplacedStudents} unplaced students remaining,High,Intensive career counseling and additional job drives`);
+        
+        // Recommendation 3: Job Market
+        if (data.overview.approvedJobs === 0) {
+            lines.push(`No approved jobs available,Critical,Reach out to recruiters and organize placement drives`);
+        } else {
+            lines.push(`Competition ratio: ${(data.overview.totalApplications / Math.max(data.overview.approvedJobs, 1)).toFixed(1)}:1 (Apps per Job),Medium,Encourage quality over quantity in applications`);
+        }
+        
+        // Recommendation 4: Recruiter Engagement
+        const inactiveRecruiters = (data.recruiterDetails || []).filter(r => r.jobsPosted === 0).length;
+        if (inactiveRecruiters > 0) {
+            lines.push(`${inactiveRecruiters} inactive recruiters,Medium,Follow up and encourage job postings`);
+        }
+
+        // Create CSV file
+        const csvContent = "data:text/csv;charset=utf-8," + lines.map(line => {
+            // Escape lines that contain special characters
+            if (line.includes(',') && !line.startsWith('"')) {
+                return line;
+            }
+            return line;
+        }).join("\n");
+        
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `detailed_placement_report_${new Date().toLocaleDateString()}.csv`);
+        link.setAttribute("download", `placement_analytics_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        toast.success('✅ Placement analytics exported successfully!');
     };
 
     if (loading) return <Layout title="Reports"><div className="loading"><div className="spinner"></div></div></Layout>;
