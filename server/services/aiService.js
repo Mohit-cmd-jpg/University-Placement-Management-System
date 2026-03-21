@@ -225,12 +225,17 @@ const generateQuestionHash = (questionText) => {
 const getPreviousQuestionsByUser = async (topic, userId) => {
     try {
         const QuestionBank = require('../models/QuestionBank');
+        const mongoose = require('mongoose');
+        
+        // Ensure userId is an ObjectId for proper comparison
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+        
         // Find questions where this user has used them in tests
         const questions = await QuestionBank.find({ 
             topic,
             usedInTests: {
                 $elemMatch: {
-                    userId: userId
+                    userId: userObjectId
                 }
             }
         }).select('question questionHash type difficulty');
@@ -248,6 +253,10 @@ const getPreviousQuestionsByUser = async (topic, userId) => {
 const saveGeneratedQuestions = async (topic, difficulty, questions, mockTestId, userId) => {
     try {
         const QuestionBank = require('../models/QuestionBank');
+        const mongoose = require('mongoose');
+        
+        // Ensure userId is an ObjectId
+        const userObjectId = new mongoose.Types.ObjectId(userId);
         
         for (const q of questions) {
             const existingQuestion = await QuestionBank.findOne({
@@ -257,7 +266,7 @@ const saveGeneratedQuestions = async (topic, difficulty, questions, mockTestId, 
 
             if (existingQuestion) {
                 // Question already exists - just add test usage with user context
-                existingQuestion.usedInTests.push({ testId: mockTestId, userId });
+                existingQuestion.usedInTests.push({ testId: mockTestId, userId: userObjectId });
                 await existingQuestion.save();
             } else {
                 // New question - save to bank with user context
@@ -272,7 +281,7 @@ const saveGeneratedQuestions = async (topic, difficulty, questions, mockTestId, 
                     explanation: q.explanation,
                     points: q.points,
                     questionHash,
-                    usedInTests: [{ testId: mockTestId, userId }]
+                    usedInTests: [{ testId: mockTestId, userId: userObjectId }]
                 });
                 await newQuestion.save();
             }

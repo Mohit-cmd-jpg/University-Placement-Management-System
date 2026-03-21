@@ -138,7 +138,7 @@ router.post('/generate-test', auth, async (req, res) => {
             duration,
             totalQuestions: testData.questions.length,
             questions: testData.questions,
-            isPublished: true,
+            isPublished: false,
             createdBy: userId
         });
 
@@ -202,8 +202,17 @@ router.get('/mock-tests/:id', auth, async (req, res) => {
 
 router.post('/mock-tests/:id/submit', auth, async (req, res) => {
     try {
+        const userId = req.user.id;
         const test = await MockTest.findById(req.params.id);
         if (!test) return res.status(404).json({ error: 'Test not found' });
+
+        // ✅ PERMISSION CHECK: Student can only submit tests they created or published tests
+        const isCreator = test.createdBy.toString() === userId.toString();
+        const isPublished = test.isPublished;
+        
+        if (!isCreator && !isPublished) {
+            return res.status(403).json({ error: 'Access denied: You cannot submit this test' });
+        }
 
         const { answers } = req.body;
         if (!answers || !Array.isArray(answers)) {
