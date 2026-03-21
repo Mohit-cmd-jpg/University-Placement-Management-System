@@ -118,12 +118,15 @@ router.post('/generate-test', auth, async (req, res) => {
             return res.status(400).json({ error: 'Invalid question type. Must be: mcq, written, coding, or mix' });
         }
 
-        // Remove all previously generated AI tests from the database
-        await MockTest.deleteMany({ category: 'AI Generated' });
-        console.log('[PREP] Cleared old AI-generated mock tests');
+        const userId = req.user.id;
+
+        // Remove all previously generated AI tests for THIS STUDENT only
+        await MockTest.deleteMany({ category: 'AI Generated', createdBy: userId });
+        console.log(`[PREP] Cleared old AI-generated mock tests for student: ${userId}`);
 
         const questionCount = Math.min(10, Math.max(3, parseInt(count) || 5));
-        const testData = await generateMockTest(topic, difficulty, questionCount, questionTypes);
+        // Pass userId to generateMockTest for student-specific deduplication
+        const testData = await generateMockTest(topic, difficulty, questionCount, questionTypes, userId);
 
         const title = `${topic} — ${difficulty} (AI Generated)`;
         // Calculate duration based on question types
@@ -136,13 +139,13 @@ router.post('/generate-test', auth, async (req, res) => {
             totalQuestions: testData.questions.length,
             questions: testData.questions,
             isPublished: true,
-            createdBy: req.user.id
+            createdBy: userId
         });
 
         await newTest.save();
 
-        // Save generated questions to QuestionBank to prevent duplicates
-        await saveGeneratedQuestions(topic, difficulty, testData.questions, newTest._id);
+        // Save generated questions to QuestionBank with userId for isolation
+        await saveGeneratedQuestions(topic, difficulty, testData.questions, newTest._id, userId);
 
         res.status(201).json(newTest);
     } catch (err) {
@@ -155,7 +158,14 @@ router.post('/generate-test', auth, async (req, res) => {
 
 router.get('/mock-tests', auth, async (req, res) => {
     try {
-        const tests = await MockTest.find({ isPublished: true }).select('-questions.correctAnswer');
+        const userId = req.user.id;
+        // Show published tests + tests created by this student
+        const tests = await MockTest.find({
+            $or: [
+                { isPublished: true },
+                { createdBy: userId }
+            ]
+        }).select('-questions.correctAnswer');
         res.json(tests);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch mock tests' });
@@ -164,9 +174,27 @@ router.get('/mock-tests', auth, async (req, res) => {
 
 router.get('/mock-tests/:id', auth, async (req, res) => {
     try {
-        const test = await MockTest.findById(req.params.id).select('-questions.correctAnswer');
+        const userId = req.user.id;
+        const test = await MockTest.findById(req.params.id);
+        
         if (!test) return res.status(404).json({ error: 'Test not found' });
-        res.json(test);
+        
+        // Allow access if test is published OR student created it
+        if (!test.isPublished && test.createdBy.toString() !== userId) {
+            return res.status(403).json({ error: 'Access denied: This test is not available to you' });
+        }
+        
+        // Return test without revealing correct answers to non-creators
+        const testJson = test.toJSON();
+        if (test.createdBy.toString() !== userId) {
+            // Remove correct answers for non-creators
+            testJson.questions = testJson.questions.map(q => ({
+                ...q,
+                correctAnswer: undefined
+            }));
+        }
+        
+        res.json(testJson);
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }

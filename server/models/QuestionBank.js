@@ -19,6 +19,7 @@ const questionBankSchema = new mongoose.Schema({
     usedInTests: [
         {
             testId: { type: mongoose.Schema.Types.ObjectId, ref: 'MockTest' },
+            userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
             generatedAt: { type: Date, default: Date.now }
         }
     ]
