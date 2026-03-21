@@ -180,22 +180,25 @@ router.get('/mock-tests/:id', auth, async (req, res) => {
         if (!test) return res.status(404).json({ error: 'Test not found' });
         
         // Allow access if test is published OR student created it
-        if (!test.isPublished && test.createdBy.toString() !== userId) {
+        const isCreator = test.createdBy.toString() === userId.toString();
+        if (!test.isPublished && !isCreator) {
             return res.status(403).json({ error: 'Access denied: This test is not available to you' });
         }
         
-        // Return test without revealing correct answers to non-creators
-        const testJson = test.toJSON();
-        if (test.createdBy.toString() !== userId) {
+        // Convert to plain object and hide correct answers from non-creators
+        const testObj = test.toObject();
+        if (!isCreator) {
             // Remove correct answers for non-creators
-            testJson.questions = testJson.questions.map(q => ({
-                ...q,
-                correctAnswer: undefined
-            }));
+            testObj.questions = testObj.questions.map(q => {
+                const questionCopy = { ...q };
+                delete questionCopy.correctAnswer;
+                return questionCopy;
+            });
         }
         
-        res.json(testJson);
+        res.json(testObj);
     } catch (err) {
+        console.error('[PREP] GET mock-test error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
