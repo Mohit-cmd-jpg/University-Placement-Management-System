@@ -133,6 +133,11 @@ router.post('/generate-test', auth, async (req, res) => {
         });
 
         await newTest.save();
+
+        // Save generated questions to QuestionBank to prevent duplicates
+        const { saveGeneratedQuestions } = require('../services/aiService');
+        await saveGeneratedQuestions(topic, difficulty, testData.questions, newTest._id);
+
         res.status(201).json(newTest);
     } catch (err) {
         console.error('AI Test Generation Error:', err);

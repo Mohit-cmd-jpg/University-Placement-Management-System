@@ -7,6 +7,7 @@
 const OpenAI = require('openai');
 const pdf = require('pdf-parse');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const getGitHubToken = () => {
     // Backward compatibility: older deployments may still store PAT in OPENAI_API_KEY
@@ -211,6 +212,69 @@ const parseJsonSafely = (text) => {
 // ΓöÇΓöÇΓöÇ Feature 1: Mock Test Generation ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 /**
+ * Generate a SHA256 hash of question text for deduplication
+ */
+const generateQuestionHash = (questionText) => {
+    return crypto.createHash('sha256').update(questionText.toLowerCase().trim()).digest('hex');
+};
+
+/**
+ * Get previously generated questions for a topic
+ */
+const getPreviousQuestions = async (topic) => {
+    try {
+        const QuestionBank = require('../models/QuestionBank');
+        const questions = await QuestionBank.find({ topic }).select('question questionHash type difficulty');
+        return questions;
+    } catch (err) {
+        console.log('[AI] Warning: Could not fetch question history:', err.message);
+        return [];
+    }
+};
+
+/**
+ * Save generated questions to QuestionBank to prevent future duplicates
+ */
+const saveGeneratedQuestions = async (topic, difficulty, questions, mockTestId) => {
+    try {
+        const QuestionBank = require('../models/QuestionBank');
+        
+        for (const q of questions) {
+            const existingQuestion = await QuestionBank.findOne({
+                question: q.question,
+                topic
+            });
+
+            if (existingQuestion) {
+                // Question already exists - just add test usage
+                existingQuestion.usedInTests.push({ testId: mockTestId });
+                await existingQuestion.save();
+            } else {
+                // New question - save to bank
+                const questionHash = generateQuestionHash(q.question);
+                const newQuestion = new QuestionBank({
+                    question: q.question,
+                    topic,
+                    type: q.type,
+                    difficulty,
+                    options: q.options || [],
+                    correctAnswer: q.correctAnswer,
+                    explanation: q.explanation,
+                    points: q.points,
+                    questionHash,
+                    usedInTests: [{ testId: mockTestId }]
+                });
+                await newQuestion.save();
+            }
+        }
+        console.log(`[AI] ✅ Saved ${questions.length} questions to QuestionBank for ${topic}`);
+    } catch (err) {
+        console.error('[AI] Error saving questions to QuestionBank:', err.message);
+        // Don't throw - continue even if QuestionBank save fails
+    }
+};
+
+/**
  * Generate a balanced mock test
  * @param {string} topic - e.g. "DSA", "Aptitude", "DBMS", "OS", "Web"
  * @param {string} difficulty - "Easy" | "Medium" | "Hard"
@@ -222,6 +286,13 @@ const generateMockTest = async (topic, difficulty = 'Medium', count = 5, questio
     );
 
     console.log(`[AI] Generating ${isTechnical ? 'Technical' : 'Non-Technical'} test for topic: "${topic}", count: ${count}, types: ${questionTypes}`);
+
+    // Get previously generated questions to avoid duplicates
+    const previousQuestions = await getPreviousQuestions(topic);
+    const previousQuestionTexts = previousQuestions.map(q => q.question);
+    const deduplicationNote = previousQuestionTexts.length > 0 
+        ? `\n\nIMPORTANT - AVOID THESE PREVIOUSLY GENERATED QUESTIONS:\n${previousQuestionTexts.map((q, i) => `${i+1}. ${q.substring(0, 80)}...`).join('\n')}\n\nGenerate COMPLETELY NEW and DIFFERENT questions that have never been used before.`
+        : '';
 
     // Determine allowed question types
     let allowedTypes = [];
@@ -301,7 +372,7 @@ ${rules}
 - MCQ options must be plausible ΓÇö avoid obviously wrong distractors.
 - Concept questions must test understanding, not just definitions.
 - correctAnswer for MCQ must be one of the option strings exactly.
-- CRITICAL: Your questions array MUST contain exactly ${count} questions, each with a "type" field matching one of: ${allowedTypes.join(', ')}.
+- CRITICAL: Your questions array MUST contain exactly ${count} questions, each with a "type" field matching one of: ${allowedTypes.join(', ')}.${deduplicationNote}
 
 Return ONLY this exact JSON structure, nothing else, no markdown:
 {
@@ -1080,6 +1151,7 @@ module.exports = {
     evaluateInterviewAnswer,
     extractTextFromPDF,
     generateRecommendations,
+    saveGeneratedQuestions,
     // Legacy aliases
     evaluateTestAnswers,
     evaluateCandidateForJob,
