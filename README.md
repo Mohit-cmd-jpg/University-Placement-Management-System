@@ -85,17 +85,6 @@
 
 ![Admin Page](docs/assets/screenshots/AdminPage.png)
 
-### Admin Real-Time Dashboard (Multi-User & Concurrency Support)
-
-![Admin Real-Time Dashboard](docs/assets/screenshots/image-1773444246079.png)
-
-**Features**: This dashboard demonstrates enterprise-grade multi-user concurrency with:
-- ✅ Real-time statistics (5-second polling refresh) showing total students, placed students, active jobs, and applications
-- ✅ Safe concurrent access with optimistic locking and distributed session management
-- ✅ Automatic cross-tab synchronization when users login/logout from different browsers
-- ✅ No downtime deployment - all updates backward compatible
-- ✅ Websocket-free polling architecture (works on serverless platforms like Vercel)
-
 ---
 
 ## ✨ Key Features
