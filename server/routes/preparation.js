@@ -166,15 +166,8 @@ router.post('/generate-test', auth, async (req, res) => {
         const userId = req.user._id || req.user.id;
         const userObjectId = new mongoose.Types.ObjectId(userId);
 
-        // Remove ALL previously generated AI tests for THIS STUDENT only (published or unpublished)
-        await MockTest.deleteMany({ 
-            category: 'AI Generated', 
-            $or: [
-                { createdBy: userObjectId },
-                { createdBy: userId.toString() } // In case userId is stored as string
-            ]
-        });
-        console.log(`[PREP] Cleared old AI-generated mock tests for student: ${userId}`);
+        // NOTE: DO NOT delete old tests - keep them for student reference
+        // Previously: await MockTest.deleteMany(...) - REMOVED to preserve test history
 
         const questionCount = Math.min(10, Math.max(3, parseInt(count) || 5));
         // Pass userId to generateMockTest for student-specific deduplication
@@ -212,17 +205,24 @@ router.post('/generate-test', auth, async (req, res) => {
 router.get('/mock-tests', auth, async (req, res) => {
     try {
         const userId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
-        // Show published tests + tests created by this student
+        
+        // Show published tests + tests created by this student (both published and unpublished)
         const tests = await MockTest.find({
             $or: [
                 { isPublished: true },
-                { createdBy: userId }
+                { createdBy: userId },
+                { createdBy: userId.toString() } // Handle string ID format
             ]
-        }).select('-questions.correctAnswer');
+        })
+        .select('-questions.correctAnswer')
+        .sort({ createdAt: -1 }); // Show newest first
+        
         res.json(tests);
     } catch (err) {
         console.error('[PREP] GET mock-tests error:', err);
         res.status(500).json({ error: 'Failed to fetch mock tests: ' + err.message });
+    }
+});
     }
 });
 
