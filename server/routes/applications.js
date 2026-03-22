@@ -87,25 +87,35 @@ router.post('/', auth, authorize('student'), async (req, res) => {
     }
 });
 
-// Get my applications (student) - PAGINATION ADDED
+// Get my applications (student) - PAGINATION SUPPORTED (backward compatible)
 router.get('/my-applications', auth, authorize('student'), async (req, res) => {
     try {
+        // Check if pagination is requested via query params
+        const hasPaginationParams = req.query.page || req.query.limit;
+        
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(100, parseInt(req.query.limit) || 20);
         const skip = (page - 1) * limit;
         
-        const applications = await Application.find({ student: req.user._id })
+        let query = Application.find({ student: req.user._id })
             .populate({ path: 'job', populate: { path: 'postedBy', select: 'name email recruiterProfile' } })
             .sort('-createdAt')
-            .skip(skip)
-            .limit(limit)
             .lean();
         
-        const total = await Application.countDocuments({ student: req.user._id });
-        res.json({
-            applications,
-            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
-        });
+        // If pagination params provided, apply them; otherwise return all
+        if (hasPaginationParams) {
+            query = query.skip(skip).limit(limit);
+            const applications = await query;
+            const total = await Application.countDocuments({ student: req.user._id });
+            res.json({
+                applications,
+                pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+            });
+        } else {
+            // Return simple array for backward compatibility
+            const applications = await query;
+            res.json(applications);
+        }
     } catch (error) {
         res.status(500).json({ error: 'Error fetching applications' });
     }
@@ -118,25 +128,33 @@ const { calculateScore } = require('../utils/atsScorer');
 const ATSSettings = require('../models/ATSSettings');
 
 
-// Get applicants for a job (recruiter) - PAGINATION ADDED
+// Get applicants for a job (recruiter) - PAGINATION SUPPORTED (backward compatible)
 router.get('/job/:jobId', auth, authorize('recruiter', 'admin'), async (req, res) => {
     try {
+        const hasPaginationParams = req.query.page || req.query.limit;
+        
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(100, parseInt(req.query.limit) || 20);
         const skip = (page - 1) * limit;
         
-        const applications = await Application.find({ job: req.params.jobId })
+        let query = Application.find({ job: req.params.jobId })
             .populate('student', 'name email studentProfile')
             .sort('-createdAt')
-            .skip(skip)
-            .limit(limit)
             .lean();
         
-        const total = await Application.countDocuments({ job: req.params.jobId });
-        res.json({
-            applications,
-            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
-        });
+        if (hasPaginationParams) {
+            query = query.skip(skip).limit(limit);
+            const applications = await query;
+            const total = await Application.countDocuments({ job: req.params.jobId });
+            res.json({
+                applications,
+                pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+            });
+        } else {
+            // Return simple array for backward compatibility
+            const applications = await query;
+            res.json(applications);
+        }
     } catch (error) {
         res.status(500).json({ error: 'Error fetching applicants' });
     }
@@ -297,26 +315,34 @@ router.put('/:id/status', auth, authorize('recruiter', 'admin'), async (req, res
     }
 });
 
-// Get all applications (admin) - PAGINATION ADDED
+// Get all applications (admin) - PAGINATION SUPPORTED (backward compatible)
 router.get('/', auth, authorize('admin'), async (req, res) => {
     try {
+        const hasPaginationParams = req.query.page || req.query.limit;
+        
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(100, parseInt(req.query.limit) || 50);
         const skip = (page - 1) * limit;
         
-        const applications = await Application.find()
+        let query = Application.find()
             .populate('student', 'name email studentProfile')
             .populate({ path: 'job', populate: { path: 'postedBy', select: 'name recruiterProfile' } })
             .sort('-createdAt')
-            .skip(skip)
-            .limit(limit)
             .lean();
         
-        const total = await Application.countDocuments();
-        res.json({
-            applications,
-            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
-        });
+        if (hasPaginationParams) {
+            query = query.skip(skip).limit(limit);
+            const applications = await query;
+            const total = await Application.countDocuments();
+            res.json({
+                applications,
+                pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+            });
+        } else {
+            // Return simple array for backward compatibility
+            const applications = await query;
+            res.json(applications);
+        }
     } catch (error) {
         res.status(500).json({ error: 'Error fetching applications' });
     }
