@@ -7,6 +7,7 @@ const mockTestSchema = new mongoose.Schema({
     duration: { type: Number, required: true }, // in minutes
     totalQuestions: { type: Number, required: true },
     isPublished: { type: Boolean, default: true },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     questions: [{
         question: { type: String, required: true },
         type: { type: String, enum: ['mcq', 'subjective', 'coding'], required: true },

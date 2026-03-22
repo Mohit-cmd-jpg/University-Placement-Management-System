@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
 const InterviewQuestion = require('../models/InterviewQuestion');
@@ -118,10 +119,12 @@ router.post('/generate-test', auth, async (req, res) => {
             return res.status(400).json({ error: 'Invalid question type. Must be: mcq, written, coding, or mix' });
         }
 
-        const userId = req.user.id;
+        // Get userId as ObjectId for consistency
+        const userId = req.user._id || req.user.id;
+        const userObjectId = new mongoose.Types.ObjectId(userId);
 
         // Remove all previously generated AI tests for THIS STUDENT only
-        await MockTest.deleteMany({ category: 'AI Generated', createdBy: userId });
+        await MockTest.deleteMany({ category: 'AI Generated', createdBy: userObjectId });
         console.log(`[PREP] Cleared old AI-generated mock tests for student: ${userId}`);
 
         const questionCount = Math.min(10, Math.max(3, parseInt(count) || 5));
@@ -139,7 +142,7 @@ router.post('/generate-test', auth, async (req, res) => {
             totalQuestions: testData.questions.length,
             questions: testData.questions,
             isPublished: false,
-            createdBy: userId
+            createdBy: userObjectId
         });
 
         await newTest.save();
@@ -158,7 +161,7 @@ router.post('/generate-test', auth, async (req, res) => {
 
 router.get('/mock-tests', auth, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
         // Show published tests + tests created by this student
         const tests = await MockTest.find({
             $or: [
@@ -168,19 +171,20 @@ router.get('/mock-tests', auth, async (req, res) => {
         }).select('-questions.correctAnswer');
         res.json(tests);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch mock tests' });
+        console.error('[PREP] GET mock-tests error:', err);
+        res.status(500).json({ error: 'Failed to fetch mock tests: ' + err.message });
     }
 });
 
 router.get('/mock-tests/:id', auth, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user._id || req.user.id; // Get MongoDB ObjectId
         const test = await MockTest.findById(req.params.id);
         
         if (!test) return res.status(404).json({ error: 'Test not found' });
         
         // Allow access if test is published OR student created it
-        const isCreator = test.createdBy.toString() === userId.toString();
+        const isCreator = test.createdBy.equals(new mongoose.Types.ObjectId(userId));
         if (!test.isPublished && !isCreator) {
             return res.status(403).json({ error: 'Access denied: This test is not available to you' });
         }
@@ -198,19 +202,19 @@ router.get('/mock-tests/:id', auth, async (req, res) => {
         
         res.json(testObj);
     } catch (err) {
-        console.error('[PREP] GET mock-test error:', err);
-        res.status(500).json({ error: 'Server error' });
+        console.error('[PREP] GET mock-test/:id error:', err);
+        res.status(500).json({ error: 'Server error: ' + err.message });
     }
 });
 
 router.post('/mock-tests/:id/submit', auth, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
         const test = await MockTest.findById(req.params.id);
         if (!test) return res.status(404).json({ error: 'Test not found' });
 
         // ✅ PERMISSION CHECK: Student can only submit tests they created or published tests
-        const isCreator = test.createdBy.toString() === userId.toString();
+        const isCreator = test.createdBy.equals(userId);
         const isPublished = test.isPublished;
         
         if (!isCreator && !isPublished) {
