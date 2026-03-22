@@ -156,19 +156,27 @@ async function setOTPWithVersioning(email, otp, type = 'registration') {
         const normalizedEmail = email.toLowerCase().trim();
         const normalizedOtp = String(otp).trim(); // Ensure OTP is a string
         const now = new Date();
+        const expiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 minute TTL
         
-        console.log('[CONCURRENCY] Setting OTP:', { email: normalizedEmail, otp: normalizedOtp, type });
+        console.log('[CONCURRENCY] Setting OTP:', { 
+            email: normalizedEmail, 
+            otp: normalizedOtp, 
+            type,
+            expiresAt: expiresAt.toISOString()
+        });
+        
+        const OTP = require('../models/OTP');
         
         // Try to create new OTP record with atomic version increment
         // CRITICAL FIX: Include type in query to keep registration and password-reset OTPs separate
-        let result = await require('../models/OTP').findOneAndUpdate(
+        let result = await OTP.findOneAndUpdate(
             { email: normalizedEmail, type },
             {
                 $set: {
                     otp: normalizedOtp,
                     type,
                     createdAt: now,
-                    expiresAt: new Date(now + 5 * 60 * 1000), // 5 minute TTL
+                    expiresAt: expiresAt,
                     attempts: 0
                 },
                 $inc: { version: 1 }  // Atomically increment version
@@ -180,10 +188,28 @@ async function setOTPWithVersioning(email, otp, type = 'registration') {
             }
         );
         
-        console.log('[CONCURRENCY] OTP set successfully:', { email: normalizedEmail, type, storedOtp: result.otp });
+        if (!result) {
+            console.error('[CONCURRENCY] CRITICAL: findOneAndUpdate returned null');
+            throw new Error('Failed to save OTP - result is null');
+        }
+        
+        console.log('[CONCURRENCY] OTP set successfully:', { 
+            email: normalizedEmail, 
+            type, 
+            storedOtp: result.otp,
+            expiresAt: result.expiresAt.toISOString(),
+            version: result.version,
+            _id: result._id
+        });
+        
         return result;
     } catch (error) {
-        console.error('[CONCURRENCY] Failed to set OTP:', error);
+        console.error('[CONCURRENCY] CRITICAL ERROR - Failed to set OTP:', {
+            error: error.message,
+            stack: error.stack,
+            email,
+            type
+        });
         throw error;
     }
 }
@@ -194,7 +220,20 @@ async function verifyOTPWithVersioning(email, otp, type = 'registration') {
         const normalizedOtp = String(otp).trim();
         const OTP = require('../models/OTP');
         
-        console.log('[CONCURRENCY] Verifying OTP:', { email: normalizedEmail, otpLength: normalizedOtp.length, type });
+        console.log('[CONCURRENCY] Verifying OTP:', { 
+            email: normalizedEmail, 
+            otpLength: normalizedOtp.length, 
+            type,
+            now: new Date().toISOString()
+        });
+        
+        // Check how many OTPs exist for this email
+        const allOtpsForEmail = await OTP.find({ email: normalizedEmail });
+        console.log('[CONCURRENCY] Total OTPs for email:', {
+            email: normalizedEmail,
+            count: allOtpsForEmail.length,
+            types: allOtpsForEmail.map(o => ({ type: o.type, expiresAt: o.expiresAt, hasOtp: !!o.otp }))
+        });
         
         const otpRecord = await OTP.findOne({ 
             email: normalizedEmail, 
@@ -203,11 +242,21 @@ async function verifyOTPWithVersioning(email, otp, type = 'registration') {
         });
         
         if (!otpRecord) {
-            console.log('[CONCURRENCY] OTP not found for:', { email: normalizedEmail, type, reason: 'missing or expired' });
+            console.log('[CONCURRENCY] OTP not found for:', { 
+                email: normalizedEmail, 
+                type, 
+                reason: 'missing or expired',
+                searchTime: new Date().toISOString()
+            });
             return { valid: false, error: 'Invalid or expired OTP' };
         }
         
-        console.log('[CONCURRENCY] Found OTP record, stored OTP:', { storedOtp: otpRecord.otp, receivedOtp: normalizedOtp, match: otpRecord.otp === normalizedOtp });
+        console.log('[CONCURRENCY] Found OTP record:', { 
+            storedOtp: otpRecord.otp, 
+            receivedOtp: normalizedOtp, 
+            expiresAt: otpRecord.expiresAt.toISOString(),
+            match: otpRecord.otp === normalizedOtp 
+        });
         
         // Increment attempts and check if exceeded
         if (otpRecord.attempts >= 5) {

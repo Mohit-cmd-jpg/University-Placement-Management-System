@@ -55,7 +55,21 @@ router.post('/register-otp', [
 
         // PHASE 2: Use versioning to prevent OTP overwrite race conditions
         // Ensures that if multiple requests arrive at same time, only one OTP is set
-        await setOTPWithVersioning(normalizedEmail, otp, 'registration');
+        try {
+            const savedOtp = await setOTPWithVersioning(normalizedEmail, otp, 'registration');
+            console.log('[AUTH] OTP saved successfully:', { 
+                email: normalizedEmail, 
+                storedOtp: savedOtp.otp,
+                expiresAt: savedOtp.expiresAt,
+                type: savedOtp.type 
+            });
+        } catch (otpSaveErr) {
+            console.error('[AUTH] CRITICAL: Failed to save OTP to database:', otpSaveErr);
+            return res.status(500).json({ 
+                error: 'Failed to save OTP. Database error. Please try again.',
+                details: process.env.NODE_ENV === 'development' ? otpSaveErr.message : undefined
+            });
+        }
 
         // Send OTP via Email and report delivery status
         const emailResult = await sendOTP(normalizedEmail, otp);
