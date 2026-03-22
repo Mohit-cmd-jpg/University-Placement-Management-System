@@ -333,7 +333,7 @@ router.post('/reset-password', [
         }
 
         // Check OTP (verify it's a password-reset type) using versioned verification
-        const { valid, otpRecord, error: otpError } = await concurrencyUtils.verifyOTPWithVersioning(
+        const { valid, otpRecord, error: otpError } = await verifyOTPWithVersioning(
             email, 
             otp, 
             'password-reset'
