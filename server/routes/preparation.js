@@ -16,13 +16,12 @@ const {
 } = require('../services/aiService');
 
 // ─── Database Cleanup Migration ────────────────────────────────────────────
-// This runs once to fix old tests without createdBy field
+// This runs once to fix old tests without createdBy field and remove unwanted tests
 let migrationDone = false;
 const cleanupOldTests = async () => {
     if (migrationDone) return;
     try {
         // Only hide AI-generated tests without a creator
-        // Keep existing pre-loaded tests (like "Aptitude Mega Test") as published
         const updated = await MockTest.updateMany(
             { 
                 category: 'AI Generated',
@@ -33,6 +32,13 @@ const cleanupOldTests = async () => {
         if (updated.modifiedCount > 0) {
             console.log(`[PREP MIGRATION] Updated ${updated.modifiedCount} AI-generated tests without creator to isPublished: false`);
         }
+        
+        // Remove Aptitude Mega Test (pre-loaded test that shouldn't be visible)
+        const deleted = await MockTest.deleteOne({ title: 'Aptitude Mega Test' });
+        if (deleted.deletedCount > 0) {
+            console.log(`[PREP MIGRATION] Deleted Aptitude Mega Test from database`);
+        }
+        
         migrationDone = true;
     } catch (err) {
         console.error('[PREP MIGRATION] Error cleaning up old tests:', err);
