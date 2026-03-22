@@ -223,8 +223,6 @@ router.get('/mock-tests', auth, async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch mock tests: ' + err.message });
     }
 });
-    }
-});
 
 router.get('/mock-tests/:id', auth, async (req, res) => {
     try {
