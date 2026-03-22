@@ -45,8 +45,10 @@ router.get('/interview/questions', auth, async (req, res) => {
         if (!role) return res.status(400).json({ error: 'Role is required' });
 
         // CRITICAL FIX: Validate role against allowlist to prevent injection
+        // Accept both formats: "software-engineer" AND "software engineer"
         const validRoles = ['software-engineer', 'data-scientist', 'product-manager', 'designer', 'devops', 'frontend', 'backend', 'fullstack'];
-        if (!validRoles.includes(String(role).toLowerCase())) {
+        const normalizedRole = String(role).toLowerCase().replace(/\s+/g, '-'); // Convert spaces to hyphens
+        if (!validRoles.includes(normalizedRole)) {
             return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
         }
 
@@ -69,17 +71,17 @@ router.get('/interview/questions', auth, async (req, res) => {
         }
 
         // Always generate fresh questions with the AI
-        const aiGenerated = await generateInterviewQuestions(role, questionCount, requestedTypes);
+        const aiGenerated = await generateInterviewQuestions(normalizedRole, questionCount, requestedTypes);
 
         const toSave = [];
         if (requestedTypes.includes('technical') && aiGenerated.technicalQuestions) {
-            aiGenerated.technicalQuestions.forEach(q => toSave.push({ role, category: 'Technical', questionText: q, difficulty: 'Medium' }));
+            aiGenerated.technicalQuestions.forEach(q => toSave.push({ role: normalizedRole, category: 'Technical', questionText: q, difficulty: 'Medium' }));
         }
         if (requestedTypes.includes('behavioral') && aiGenerated.behavioralQuestions) {
-            aiGenerated.behavioralQuestions.forEach(q => toSave.push({ role, category: 'Behavioral', questionText: q, difficulty: 'Medium' }));
+            aiGenerated.behavioralQuestions.forEach(q => toSave.push({ role: normalizedRole, category: 'Behavioral', questionText: q, difficulty: 'Medium' }));
         }
         if (requestedTypes.includes('hr') && aiGenerated.hrQuestions) {
-            aiGenerated.hrQuestions.forEach(q => toSave.push({ role, category: 'HR', questionText: q, difficulty: 'Easy' }));
+            aiGenerated.hrQuestions.forEach(q => toSave.push({ role: normalizedRole, category: 'HR', questionText: q, difficulty: 'Easy' }));
         }
 
         const questions = await InterviewQuestion.insertMany(toSave);
