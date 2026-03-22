@@ -133,6 +133,20 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// AI-specific rate limiting (more restrictive to prevent abuse)
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute for AI endpoints
+  message: { success: false, message: 'Too many AI requests. Please wait before trying again.' },
+  standardHeaders: false
+});
+
+// Apply AI limiter to AI-intensive endpoints
+app.use('/api/preparation/generate-questions', aiLimiter);
+app.use('/api/preparation/generate-test', aiLimiter);
+app.use('/api/applications/.*\\/ai-', aiLimiter);
+app.use('/api/students/analyze-resume', aiLimiter);
+
 // Body parsing - with size limits to prevent DoS attacks
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -146,6 +160,13 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Request ID middleware for tracing and logging
+app.use((req, res, next) => {
+  req.id = `REQ_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 5)}`.toUpperCase();
+  res.setHeader('X-Request-ID', req.id);
+  next();
+});
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -166,31 +187,46 @@ app.get('/api/health', (req, res) => {
 
 // Enhanced Error handling middleware - prevents information disclosure in production
 app.use((err, req, res, next) => {
-  // Log full error server-side for debugging
-  const errorId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-  console.error(`[ERROR-${errorId}] ${err.stack || err.message}`);
+  // Log full error server-side for debugging with request context
+  const errorId = req.id || Date.now().toString(36) + Math.random().toString(36).substr(2);
+  console.error(`[${errorId}] Error: ${err.stack || err.message}`);
   
   // Determine status code
   const statusCode = err.statusCode || err.status || 500;
   
-  // Build safe response
+  // Build safe response with consistent format
   let errorResponse = {
-    error: 'An error occurred processing your request'
+    success: false,
+    message: 'An error occurred processing your request',
+    status: statusCode,
+    errorId: errorId
   };
 
   // Include specific safe error messages for known error types
   if (err.name === 'ValidationError') {
-    errorResponse.error = 'Validation failed';
+    errorResponse.message = 'Validation failed. Please check required fields.';
   } else if (err.name === 'CastError') {
-    errorResponse.error = 'Invalid request parameters';
-  } else if (err.name === 'MongooseError') {
-    errorResponse.error = 'Database operation failed';
+    errorResponse.message = 'Invalid request parameters';
+  } else if (err.name === 'MongooseError' || err.name === 'MongoError') {
+    errorResponse.message = 'Database operation failed';
   } else if (statusCode === 401) {
-    errorResponse.error = 'Authentication required';
+    errorResponse.message = 'Authentication required. Please log in.';
   } else if (statusCode === 403) {
-    errorResponse.error = 'Access denied';
+    errorResponse.message = 'You do not have permission to access this resource';
   } else if (statusCode === 404) {
-    errorResponse.error = 'Resource not found';
+    errorResponse.message = 'The requested resource was not found';
+  } else if (statusCode >= 400 && statusCode < 500) {
+    // Use original message for client errors (validation, bad requests)
+    errorResponse.message = err.message || 'Invalid request';
+  }
+
+  // In development, include additional details
+  if (process.env.NODE_ENV === 'development') {
+    errorResponse.details = err.stack;
+  }
+
+  res.status(statusCode).json(errorResponse);
+});
   } else if (statusCode >= 400 && statusCode < 500) {
     // Use original message for client errors (validation, bad requests)
     errorResponse.error = err.message || 'Invalid request';

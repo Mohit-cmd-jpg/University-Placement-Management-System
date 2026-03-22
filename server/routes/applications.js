@@ -87,15 +87,27 @@ router.post('/', auth, authorize('student'), async (req, res) => {
     }
 });
 
-// Get my applications (student)
+// Get my applications (student) - PAGINATION ADDED
 router.get('/my-applications', auth, authorize('student'), async (req, res) => {
     try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 20);
+        const skip = (page - 1) * limit;
+        
         const applications = await Application.find({ student: req.user._id })
             .populate({ path: 'job', populate: { path: 'postedBy', select: 'name email recruiterProfile' } })
-            .sort('-createdAt');
-        res.json(applications);
+            .sort('-createdAt')
+            .skip(skip)
+            .limit(limit)
+            .lean();
+        
+        const total = await Application.countDocuments({ student: req.user._id });
+        res.json({
+            applications,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Error fetching applications' });
     }
 });
 
@@ -106,15 +118,27 @@ const { calculateScore } = require('../utils/atsScorer');
 const ATSSettings = require('../models/ATSSettings');
 
 
-// Get applicants for a job (recruiter)
+// Get applicants for a job (recruiter) - PAGINATION ADDED
 router.get('/job/:jobId', auth, authorize('recruiter', 'admin'), async (req, res) => {
     try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 20);
+        const skip = (page - 1) * limit;
+        
         const applications = await Application.find({ job: req.params.jobId })
             .populate('student', 'name email studentProfile')
-            .sort('-createdAt');
-        res.json(applications);
+            .sort('-createdAt')
+            .skip(skip)
+            .limit(limit)
+            .lean();
+        
+        const total = await Application.countDocuments({ job: req.params.jobId });
+        res.json({
+            applications,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Error fetching applicants' });
     }
 });
 
@@ -153,15 +177,13 @@ router.post('/:id/ai-evaluate', auth, authorize('recruiter'), async (req, res) =
                 await application.save();
                 res.json(application);
             } catch (e) {
-                console.error('ATS Evaluation Error:', e.message);
-                res.status(500).json({ error: 'ATS evaluation failed: ' + e.message });
+                res.status(500).json({ error: 'ATS evaluation failed' });
             }
         } else {
              res.status(400).json({ error: 'No resume found' });
         }
     } catch (error) {
-        console.error('Evaluation Error:', error);
-        res.status(500).json({ error: 'Evaluation failed: ' + error.message });
+        res.status(500).json({ error: 'Evaluation failed' });
     }
 });
 
@@ -209,21 +231,19 @@ router.post('/job/:jobId/ai-rank', auth, authorize('recruiter'), async (req, res
 
                 await app.save();
                 rankedCount++;
-                console.log(`✅ Ranked ${app.student.name}: ${atsResult.atsScore}% match`);
             } catch (err) {
-                console.error(`❌ Failed to evaluate application ${app._id}:`, err.message);
+                // Silent fail for individual apps, continue ranking
             }
         }
 
         const rankedApps = await Application.find({ job: req.params.jobId })
             .populate('student', 'name email studentProfile')
-            .sort('-aiEvaluation.matchScore');
+            .sort('-aiEvaluation.matchScore')
+            .lean();
 
-        console.log(`ATS Ranking complete: ${rankedCount}/${applications.length} applicants evaluated`);
         res.json(rankedApps);
     } catch (error) {
-        console.error('ATS Rank Error:', error);
-        res.status(500).json({ error: 'Ranking failed: ' + error.message });
+        res.status(500).json({ error: 'Ranking failed' });
     }
 });
 
@@ -277,16 +297,28 @@ router.put('/:id/status', auth, authorize('recruiter', 'admin'), async (req, res
     }
 });
 
-// Get all applications (admin)
+// Get all applications (admin) - PAGINATION ADDED
 router.get('/', auth, authorize('admin'), async (req, res) => {
     try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 50);
+        const skip = (page - 1) * limit;
+        
         const applications = await Application.find()
             .populate('student', 'name email studentProfile')
             .populate({ path: 'job', populate: { path: 'postedBy', select: 'name recruiterProfile' } })
-            .sort('-createdAt');
-        res.json(applications);
+            .sort('-createdAt')
+            .skip(skip)
+            .limit(limit)
+            .lean();
+        
+        const total = await Application.countDocuments();
+        res.json({
+            applications,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Error fetching applications' });
     }
 });
 

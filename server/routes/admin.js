@@ -140,11 +140,25 @@ router.delete('/recruiters/:id', auth, authorize('admin'), async (req, res) => {
 
 // ==================== Admin Management ====================
 
-// Get all admins
+// Get all admins - PAGINATION ADDED
 router.get('/admins', auth, authorize('admin'), async (req, res) => {
     try {
-        const admins = await User.find({ role: 'admin' }).select('name email createdAt').sort('-createdAt');
-        res.json(admins);
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 20);
+        const skip = (page - 1) * limit;
+        
+        const admins = await User.find({ role: 'admin' })
+            .select('name email createdAt')
+            .sort('-createdAt')
+            .skip(skip)
+            .limit(limit)
+            .lean();
+        
+        const total = await User.countDocuments({ role: 'admin' });
+        res.json({
+            admins,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+        });
     } catch (error) {
         res.status(500).json({ error: 'Error fetching admins' });
     }
@@ -216,23 +230,51 @@ router.delete('/admins/:id', auth, authorize('admin'), async (req, res) => {
 
 // ==================== Job Management ====================
 
-// Get all jobs (for admin)
+// Get all jobs (for admin) - PAGINATION ADDED
 router.get('/jobs', auth, authorize('admin'), async (req, res) => {
     try {
-        const jobs = await Job.find().populate('postedBy', 'name email recruiterProfile').sort('-createdAt');
-        res.json(jobs);
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 50);
+        const skip = (page - 1) * limit;
+        
+        const jobs = await Job.find()
+            .populate('postedBy', 'name email recruiterProfile')
+            .sort('-createdAt')
+            .skip(skip)
+            .limit(limit)
+            .lean();
+        
+        const total = await Job.countDocuments();
+        res.json({
+            jobs,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Error fetching jobs' });
     }
 });
 
-// Get pending jobs
+// Get pending jobs - PAGINATION ADDED
 router.get('/jobs/pending', auth, authorize('admin'), async (req, res) => {
     try {
-        const jobs = await Job.find({ status: 'pending' }).populate('postedBy', 'name email recruiterProfile').sort('-createdAt');
-        res.json(jobs);
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 50);
+        const skip = (page - 1) * limit;
+        
+        const jobs = await Job.find({ status: 'pending' })
+            .populate('postedBy', 'name email recruiterProfile')
+            .sort('-createdAt')
+            .skip(skip)
+            .limit(limit)
+            .lean();
+        
+        const total = await Job.countDocuments({ status: 'pending' });
+        res.json({
+            jobs,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Error fetching pending jobs' });
     }
 });
 
@@ -280,10 +322,23 @@ router.put('/jobs/:id/status', auth, authorize('admin'), async (req, res) => {
 
 router.get('/drives', auth, authorize('admin'), async (req, res) => {
     try {
-        const drives = await PlacementDrive.find().sort('-date');
-        res.json(drives);
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 20);
+        const skip = (page - 1) * limit;
+        
+        const drives = await PlacementDrive.find()
+            .sort('-date')
+            .skip(skip)
+            .limit(limit)
+            .lean();
+        
+        const total = await PlacementDrive.countDocuments();
+        res.json({
+            drives,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Error fetching drives' });
     }
 });
 
@@ -320,12 +375,24 @@ router.delete('/drives/:id', auth, authorize('admin'), async (req, res) => {
 
 router.get('/announcements', auth, async (req, res) => {
     try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 20);
+        const skip = (page - 1) * limit;
+        
         const announcements = await Announcement.find({ isActive: true })
             .populate('createdBy', 'name')
-            .sort('-createdAt');
-        res.json(announcements);
+            .sort('-createdAt')
+            .skip(skip)
+            .limit(limit)
+            .lean();
+        
+        const total = await Announcement.countDocuments({ isActive: true });
+        res.json({
+            announcements,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Error fetching announcements' });
     }
 });
 
@@ -529,7 +596,8 @@ router.get('/dashboard', auth, authorize('admin'), async (req, res) => {
             .populate('student', 'name')
             .populate('job', 'title company')
             .sort('-createdAt')
-            .limit(5);
+            .limit(5)
+            .lean();
 
         res.json({
             totalStudents, placedStudents, totalJobs, pendingJobs, pendingRecruiters, totalApplications, recentApplications
@@ -723,12 +791,8 @@ router.get('/maintenance/expired-items', auth, authorize('admin'), async (req, r
 
 router.get('/export/raw', auth, authorize('admin'), async (req, res) => {
     try {
-        console.log(`[EXPORT] Admin ${req.user.name} (${req.user.email}) requesting export`);
-        
         const { dataTypes = 'students,placements,recruiters', format = 'json' } = req.query;
         const types = dataTypes.split(',').map(t => t.trim().toLowerCase());
-        
-        console.log(`[EXPORT] Data types: ${types.join(', ')}, Format: ${format}`);
         
         const exportData = {};
 
@@ -736,7 +800,6 @@ router.get('/export/raw', auth, authorize('admin'), async (req, res) => {
         if (types.includes('students')) {
             const students = await User.find({ role: 'student' }).lean();
             exportData.students = students;
-            console.log(`[EXPORT] Fetched ${students.length} students`);
         }
 
         // Placements (extracted from applications where status = 'selected')
@@ -746,21 +809,18 @@ router.get('/export/raw', auth, authorize('admin'), async (req, res) => {
                 .populate('job', 'title description company salary')
                 .lean();
             exportData.placements = placements;
-            console.log(`[EXPORT] Fetched ${placements.length} placements`);
         }
 
         // Recruiters
         if (types.includes('recruiters')) {
             const recruiters = await User.find({ role: 'recruiter' }).lean();
             exportData.recruiters = recruiters;
-            console.log(`[EXPORT] Fetched ${recruiters.length} recruiters`);
         }
 
         // Jobs
         if (types.includes('jobs')) {
             const jobs = await Job.find().populate('postedBy', 'name email').lean();
             exportData.jobs = jobs;
-            console.log(`[EXPORT] Fetched ${jobs.length} jobs`);
         }
 
         // Applications
@@ -770,21 +830,18 @@ router.get('/export/raw', auth, authorize('admin'), async (req, res) => {
                 .populate('job', 'title company')
                 .lean();
             exportData.applications = applications;
-            console.log(`[EXPORT] Fetched ${applications.length} applications`);
         }
 
         // Placement Drives
         if (types.includes('drives')) {
             const drives = await PlacementDrive.find().lean();
             exportData.drives = drives;
-            console.log(`[EXPORT] Fetched ${drives.length} placement drives`);
         }
 
         // Announcements
         if (types.includes('announcements')) {
             const announcements = await Announcement.find().lean();
             exportData.announcements = announcements;
-            console.log(`[EXPORT] Fetched ${announcements.length} announcements`);
         }
 
         // Return as JSON (only format supported now)
@@ -802,13 +859,14 @@ router.get('/export/raw', auth, authorize('admin'), async (req, res) => {
         
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', `attachment;filename=raw_export_${new Date().toISOString().split('T')[0]}.json`);
-        console.log(`[EXPORT] Returning JSON file with ${Object.keys(exportData).length} data types`);
+
         
         // Return with pretty-printing (indentation of 2 spaces)
         res.set('Content-Type', 'application/json');
         res.send(JSON.stringify(exportWithMetadata, null, 2));
     } catch (error) {
-        console.error('[EXPORT] Error:', error);
+        // Log error but return safe message
+        console.error('[EXPORT] Error:', error.message);
         res.status(500).json({ error: 'Export failed', details: error.message });
     }
 });
@@ -821,14 +879,14 @@ router.get('/export/raw', auth, authorize('admin'), async (req, res) => {
 router.post('/mock-tests/cleanup', auth, authorize('admin'), async (req, res) => {
     try {
         const result = await MockTest.deleteMany({ category: 'AI Generated' });
-        console.log(`[ADMIN] Deleted ${result.deletedCount} AI-generated mock tests`);
+
         
         res.json({
             message: `Successfully deleted ${result.deletedCount} AI-generated mock test(s)`,
             deletedCount: result.deletedCount
         });
     } catch (error) {
-        console.error('[ADMIN] Mock test cleanup error:', error);
+        console.error('[ADMIN] Mock test cleanup error:', error.message);
         res.status(500).json({ error: 'Failed to cleanup mock tests', details: error.message });
     }
 });
@@ -844,7 +902,7 @@ router.get('/mock-tests/count', auth, authorize('admin'), async (req, res) => {
             message: `${count} AI-generated mock test(s) in database`
         });
     } catch (error) {
-        console.error('[ADMIN] Mock test count error:', error);
+        console.error('[ADMIN] Mock test count error:', error.message);
         res.status(500).json({ error: 'Failed to get mock test count', details: error.message });
     }
 });
@@ -880,7 +938,7 @@ router.get('/dashboard/summary', auth, authorize('admin'), async (req, res) => {
             pollingInterval: 5000 // Client should poll every 5 seconds
         });
     } catch (error) {
-        console.error('[REAL-TIME] Dashboard summary error:', error);
+        console.error('[REAL-TIME] Dashboard error:', error.message);
         res.status(500).json({ error: 'Server error retrieving dashboard summary', details: error.message });
     }
 });
