@@ -99,11 +99,34 @@ const RecruiterDashboard = () => {
                 )}
 
                 <div className="stats-grid">
-                    <div className="stat-card">
+                    <Link 
+                        to="/recruiter/my-jobs"
+                        className="stat-card" 
+                        style={{ 
+                            cursor: 'pointer', 
+                            transition: 'all 0.2s',
+                            textDecoration: 'none',
+                            color: 'inherit'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
                         <div className="stat-icon blue"><FiBriefcase /></div>
                         <div className="stat-info"><h3>{stats.totalJobs}</h3><p>Jobs Posted</p></div>
-                    </div>
-                    <div className="stat-card">
+                    </Link>
+                    <div 
+                        className="stat-card"
+                        onClick={() => {
+                            // Navigate to my jobs filtered by approved status
+                            window.location.href = '/recruiter/my-jobs?filter=approved';
+                        }}
+                        style={{ 
+                            cursor: 'pointer', 
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
                         <div className="stat-icon green"><FiCheckCircle /></div>
                         <div className="stat-info"><h3>{stats.approved}</h3><p>Approved</p></div>
                     </div>
@@ -123,22 +146,27 @@ const RecruiterDashboard = () => {
                 {showApplicantsModal && (
                     <div style={{
                         position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        inset: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        zIndex: 1000
+                        zIndex: 2000,
+                        padding: '1rem'
+                    }}
+                    onClick={(e) => {
+                        // Close modal when clicking outside the card
+                        if (e.target === e.currentTarget) {
+                            setShowApplicantsModal(false);
+                        }
                     }}>
                         <div className="card" style={{ 
-                            width: '95%', 
-                            maxWidth: '900px', 
-                            maxHeight: '80vh', 
+                            width: '100%', 
+                            maxWidth: '1000px', 
+                            maxHeight: '85vh', 
                             overflow: 'auto',
-                            position: 'relative'
+                            position: 'relative',
+                            overflowY: 'auto'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                                 <h2 style={{ margin: 0 }}>All Applicants ({applicants.length})</h2>
@@ -148,6 +176,22 @@ const RecruiterDashboard = () => {
                                         background: 'none',
                                         border: 'none',
                                         fontSize: '1.5rem',
+                                        cursor: 'pointer',
+                                        color: 'var(--text-muted)',
+                                        padding: '0.5rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderRadius: '8px',
+                                        transition: 'all 0.2s',
+                                        minWidth: '36px'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-dark)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                                >
+                                    ✕
+                                </button>
+                            </div>
                                         cursor: 'pointer',
                                         color: 'var(--text-muted)'
                                     }}
