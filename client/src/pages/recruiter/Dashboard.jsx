@@ -192,13 +192,6 @@ const RecruiterDashboard = () => {
                                     ✕
                                 </button>
                             </div>
-                                        cursor: 'pointer',
-                                        color: 'var(--text-muted)'
-                                    }}
-                                >
-                                    ✕
-                                </button>
-                            </div>
 
                             {loadingApplicants ? (
                                 <div style={{ textAlign: 'center', padding: '2rem' }}>
