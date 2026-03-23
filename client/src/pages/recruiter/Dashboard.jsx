@@ -73,6 +73,7 @@ const RecruiterDashboard = () => {
     };
 
     return (
+        <>
         <Layout title="Recruiter Dashboard">
             <div className="fade-in">
                 <header style={{ marginBottom: '2rem' }}>
@@ -279,14 +280,9 @@ const RecruiterDashboard = () => {
                             )}
                         </div>
                     </div>
-                ), document.body)}
-
-                <div className="flex flex-col-mobile gap-3 mt-3">
-                    <Link to="/recruiter/post-job" className="btn btn-primary w-full-mobile flex justify-center">+ Post New Job</Link>
-                    <Link to="/recruiter/my-jobs" className="btn btn-secondary w-full-mobile flex justify-center">View My Jobs</Link>
-                </div>
-            </div>
-        </Layout>
+                , document.body
+            )}
+        </>
     );
 };
 
