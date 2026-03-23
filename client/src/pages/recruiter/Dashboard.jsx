@@ -2,26 +2,74 @@ import { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
 import { jobAPI, applicationAPI } from '../../services/api';
-import { FiBriefcase, FiUsers, FiCheckCircle } from 'react-icons/fi';
+import { FiBriefcase, FiUsers, FiCheckCircle, FiExternalLink } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { getProfileCompletion } from '../../services/profileCompletion';
+import toast from 'react-hot-toast';
 
 const RecruiterDashboard = () => {
     const { user } = useAuth();
     const [stats, setStats] = useState({ totalJobs: 0, totalApplicants: 0, approved: 0 });
     const [showProfilePopup, setShowProfilePopup] = useState(true);
+    const [showApplicantsModal, setShowApplicantsModal] = useState(false);
+    const [applicants, setApplicants] = useState([]);
+    const [loadingApplicants, setLoadingApplicants] = useState(false);
     const profileCompletion = getProfileCompletion(user);
 
     useEffect(() => {
-        jobAPI.getMyJobs().then(res => {
+        fetchDashboardStats();
+    }, []);
+
+    const fetchDashboardStats = async () => {
+        try {
+            const res = await jobAPI.getMyJobs();
             const jobs = res.data;
+            
+            // Calculate total applicants across all jobs
+            let totalApplicants = 0;
+            for (const job of jobs) {
+                const appRes = await applicationAPI.getJobApplicants(job._id);
+                totalApplicants += appRes.data.length;
+            }
+
             setStats({
                 totalJobs: jobs.length,
                 approved: jobs.filter(j => j.status === 'approved').length,
-                totalApplicants: 0
+                totalApplicants
             });
-        }).catch(() => { });
-    }, []);
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+            toast.error('Error loading dashboard stats');
+        }
+    };
+
+    const handleApplicantsClick = async () => {
+        setShowApplicantsModal(true);
+        setLoadingApplicants(true);
+        try {
+            const jobsRes = await jobAPI.getMyJobs();
+            const jobs = jobsRes.data;
+            
+            // Fetch applicants for all jobs
+            let allApplicants = [];
+            for (const job of jobs) {
+                const appRes = await applicationAPI.getJobApplicants(job._id);
+                const applicantsWithJobInfo = appRes.data.map(app => ({
+                    ...app,
+                    jobTitle: job.title,
+                    jobId: job._id
+                }));
+                allApplicants = [...allApplicants, ...applicantsWithJobInfo];
+            }
+            
+            setApplicants(allApplicants);
+        } catch (error) {
+            console.error('Error fetching applicants:', error);
+            toast.error('Error loading applicants');
+        } finally {
+            setLoadingApplicants(false);
+        }
+    };
 
     return (
         <Layout title="Recruiter Dashboard">
@@ -59,11 +107,134 @@ const RecruiterDashboard = () => {
                         <div className="stat-icon green"><FiCheckCircle /></div>
                         <div className="stat-info"><h3>{stats.approved}</h3><p>Approved</p></div>
                     </div>
-                    <div className="stat-card">
+                    <div 
+                        className="stat-card" 
+                        onClick={handleApplicantsClick}
+                        style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
                         <div className="stat-icon orange"><FiUsers /></div>
                         <div className="stat-info"><h3>{stats.totalApplicants}</h3><p>Applicants</p></div>
                     </div>
                 </div>
+
+                {/* Applicants Modal */}
+                {showApplicantsModal && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000
+                    }}>
+                        <div className="card" style={{ 
+                            width: '95%', 
+                            maxWidth: '900px', 
+                            maxHeight: '80vh', 
+                            overflow: 'auto',
+                            position: 'relative'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h2 style={{ margin: 0 }}>All Applicants ({applicants.length})</h2>
+                                <button
+                                    onClick={() => setShowApplicantsModal(false)}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        fontSize: '1.5rem',
+                                        cursor: 'pointer',
+                                        color: 'var(--text-muted)'
+                                    }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {loadingApplicants ? (
+                                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                                    <div className="spinner"></div>
+                                    <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Loading applicants...</p>
+                                </div>
+                            ) : applicants.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                                    <p>No applicants yet. Keep posting jobs to attract talent!</p>
+                                </div>
+                            ) : (
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                                                <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Student Name</th>
+                                                <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Email</th>
+                                                <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Applied For</th>
+                                                <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Status</th>
+                                                <th style={{ padding: '1rem', textAlign: 'center', fontWeight: '600' }}>Resume</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {applicants.map((app) => (
+                                                <tr key={app._id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <strong>{app.student?.name || 'N/A'}</strong>
+                                                    </td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        {app.student?.email || 'N/A'}
+                                                    </td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <span style={{ 
+                                                            background: 'rgba(37, 99, 235, 0.1)', 
+                                                            color: 'var(--primary)',
+                                                            padding: '0.25rem 0.75rem',
+                                                            borderRadius: '20px',
+                                                            fontSize: '0.85rem'
+                                                        }}>
+                                                            {app.jobTitle}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <span style={{
+                                                            padding: '0.25rem 0.75rem',
+                                                            borderRadius: '20px',
+                                                            fontSize: '0.85rem',
+                                                            background: app.status === 'applied' ? 'rgba(59, 130, 246, 0.1)' :
+                                                                       app.status === 'shortlisted' ? 'rgba(34, 197, 94, 0.1)' :
+                                                                       app.status === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                                                            color: app.status === 'applied' ? 'var(--primary)' :
+                                                                   app.status === 'shortlisted' ? 'var(--success)' :
+                                                                   app.status === 'rejected' ? 'var(--danger)' : 'var(--text-secondary)'
+                                                        }}>
+                                                            {app.status?.charAt(0).toUpperCase() + app.status?.slice(1)}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                        {app.student?.resume ? (
+                                                            <a 
+                                                                href={app.student.resume} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                style={{ color: 'var(--primary)', cursor: 'pointer' }}
+                                                            >
+                                                                <FiExternalLink size={18} />
+                                                            </a>
+                                                        ) : (
+                                                            <span style={{ color: 'var(--text-muted)' }}>—</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex flex-col-mobile gap-3 mt-3">
                     <Link to="/recruiter/post-job" className="btn btn-primary w-full-mobile flex justify-center">+ Post New Job</Link>
