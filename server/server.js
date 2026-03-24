@@ -169,6 +169,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use('/api/public', require('./routes/public'));  // Public landing page data
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/recruiters', require('./routes/recruiters'));
