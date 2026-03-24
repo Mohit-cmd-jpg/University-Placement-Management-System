@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { FiArrowRight, FiCheckCircle, FiUsers, FiBriefcase, FiBookOpen, FiAward } from 'react-icons/fi';
+import { FiArrowRight, FiCheckCircle, FiUsers, FiBriefcase, FiBookOpen, FiAward, FiEye, FiEyeOff, FiMail, FiLock, FiMenu, FiX } from 'react-icons/fi';
 import '../styles/Landing.css';
 
 const Landing = () => {
@@ -8,6 +8,17 @@ const Landing = () => {
     const [featuredJobs, setFeaturedJobs] = useState([]);
     const [activeDrives, setActiveDrives] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [scrolled, setScrolled] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [authTab, setAuthTab] = useState('signin');
+    const [activeNav, setActiveNav] = useState('home');
+
+    useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener('scroll', onScroll);
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -31,175 +42,313 @@ const Landing = () => {
         fetchData();
     }, []);
 
+    const toggleNav = (id) => {
+        setActiveNav(id);
+        const element = document.getElementById(id);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     return (
         <div className="landing-page">
+            {/* Floating Background Elements */}
+            <div className="floating-blobs">
+                <div className="blob blob-1"></div>
+                <div className="blob blob-2"></div>
+                <div className="blob blob-3"></div>
+            </div>
+
             {/* Navbar */}
-            <nav className="landing-navbar glass-morphism">
+            <nav className={`navbar glass-nav ${scrolled ? 'navbar-scrolled' : ''}`}>
                 <div className="navbar-container">
-                    <div className="navbar-logo">
-                        <img src="/logo.png" alt="UniPlacements" className="logo-img" />
+                    <button className="logo-btn">
+                        <div className="logo-icon">
+                            <FiAward size={20} />
+                        </div>
                         <span className="logo-text">UniPlacements</span>
+                    </button>
+
+                    {/* Desktop Navigation */}
+                    <div className="nav-links-desktop">
+                        {['Home', 'Features', 'How It Works', 'Testimonials'].map((link) => (
+                            <button
+                                key={link}
+                                onClick={() => toggleNav(link.toLowerCase().replace(/\s/g, '-'))}
+                                className={`nav-link ${activeNav === link.toLowerCase().replace(/\s/g, '-') ? 'active' : ''}`}
+                            >
+                                {link}
+                            </button>
+                        ))}
                     </div>
-                    <div className="navbar-links">
-                        <Link to="/login" className="nav-link">Sign In</Link>
-                        <Link to="/register" className="nav-btn btn-primary">Get Started</Link>
+
+                    {/* CTA Buttons */}
+                    <div className="nav-actions">
+                        <button className="nav-login-btn">Login</button>
+                        <button className="nav-cta-btn">Get Started</button>
+                        <button
+                            className="mobile-menu-btn"
+                            onClick={() => setMobileOpen(!mobileOpen)}
+                        >
+                            {mobileOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+                        </button>
                     </div>
                 </div>
+
+                {/* Mobile Menu */}
+                {mobileOpen && (
+                    <div className="mobile-menu">
+                        {['Home', 'Features', 'How It Works', 'Testimonials'].map((link) => (
+                            <button
+                                key={link}
+                                onClick={() => {
+                                    toggleNav(link.toLowerCase().replace(/\s/g, '-'));
+                                    setMobileOpen(false);
+                                }}
+                                className="mobile-nav-link"
+                            >
+                                {link}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </nav>
 
             {/* Hero Section */}
-            <section className="hero-section">
-                <div className="hero-background">
-                    <div className="gradient-blob blob-1"></div>
-                    <div className="gradient-blob blob-2"></div>
-                    <div className="gradient-blob blob-3"></div>
-                </div>
-                
-                <div className="hero-content">
-                    <div className="hero-badge">
-                        <span className="badge-icon">🎓</span>
-                        <span>Professional Placement Management System</span>
-                    </div>
-                    
-                    <h1 className="hero-title">
-                        Your Gateway to <br />
-                        <span className="text-gradient">Campus Placements</span>
-                    </h1>
-                    
-                    <p className="hero-subtitle">
-                        A powerful, centralized platform connecting universities, students, and recruiters. 
-                        Manage campus recruitment drives, track academic records, and streamline job applications seamlessly.
-                    </p>
-                    
-                    <div className="hero-actions">
-                        <Link to="/register" className="btn btn-primary btn-lg">
-                            Start Your Journey <FiArrowRight />
-                        </Link>
-                        <Link to="/login" className="btn btn-secondary btn-lg">
-                            Sign In
-                        </Link>
+            <section className="hero-section" id="home">
+                <div className="hero-container">
+                    {/* Left Content */}
+                    <div className="hero-content">
+                        <div className="hero-badge">
+                        <FiAward size={16} />
+                        </div>
+
+                        <h1 className="hero-title">
+                            Your Gateway to <br />
+                            <span className="text-gradient">Campus Placements</span>
+                        </h1>
+
+                        <p className="hero-subtitle">
+                            A comprehensive, production-grade platform bridging students, recruiters & placement officers with AI-driven preparation tools and streamlined recruitment workflows.
+                        </p>
+
+                        <div className="hero-stats">
+                            {!loading && stats && [
+                                { value: stats.totalStudents || '10k', label: 'Placements' },
+                                { value: stats.totalRecruiters || '500', label: 'Companies' },
+                                { value: '95%', label: 'Success Rate' },
+                                { value: '9.5/10', label: 'Security' },
+                            ].map((stat, i) => (
+                                <div key={i} className="stat-box">
+                                    <p className="stat-value">{stat.value}+</p>
+                                    <p className="stat-label">{stat.label}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="hero-buttons">
+                            <Link to="/register" className="btn btn-primary">
+                                Start Your Journey <FiArrowRight />
+                            </Link>
+                            <button className="btn btn-secondary">
+                                Explore Features
+                            </button>
+                        </div>
                     </div>
 
-                    {!loading && stats && (
-                        <div className="hero-stats">
-                            <div className="stat-item">
-                                <div className="stat-number">{stats.totalStudents}+</div>
-                                <div className="stat-label">Verified Students</div>
+                    {/* Right Auth Form */}
+                    <div className="hero-form-wrapper">
+                        <div className="auth-card">
+                            {/* Tab Switcher */}
+                            <div className="auth-tabs">
+                                <button
+                                    onClick={() => setAuthTab('signin')}
+                                    className={`auth-tab ${authTab === 'signin' ? 'active' : ''}`}
+                                >
+                                    Sign In
+                                </button>
+                                <button
+                                    onClick={() => setAuthTab('register')}
+                                    className={`auth-tab ${authTab === 'register' ? 'active' : ''}`}
+                                >
+                                    Register
+                                </button>
                             </div>
-                            <div className="stat-item">
-                                <div className="stat-number">{stats.activeJobs}+</div>
-                                <div className="stat-label">Active Positions</div>
-                            </div>
-                            <div className="stat-item">
-                                <div className="stat-number">{stats.successfulPlacements}+</div>
-                                <div className="stat-label">Placements</div>
-                            </div>
+
+                            <h2 className="auth-title">
+                                {authTab === 'signin' ? 'Welcome back' : 'Create account'}
+                            </h2>
+                            <p className="auth-subtitle">
+                                {authTab === 'signin'
+                                    ? 'Sign in to access your placement portal'
+                                    : 'Join our placement network today'}
+                            </p>
+
+                            <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
+                                {authTab === 'register' && (
+                                    <input
+                                        type="text"
+                                        placeholder="Full name"
+                                        className="form-input"
+                                    />
+                                )}
+
+                                {authTab === 'register' && (
+                                    <select className="form-input">
+                                        <option value="">Select Role</option>
+                                        <option value="student">Student</option>
+                                        <option value="recruiter">Recruiter</option>
+                                    </select>
+                                )}
+
+                                <div className="form-group">
+                                    <FiMail size={16} className="form-icon" />
+                                    <input
+                                        type="email"
+                                        placeholder="Email address"
+                                        className="form-input"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <FiLock size={16} className="form-icon" />
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        placeholder="Password"
+                                        className="form-input"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="form-toggle"
+                                    >
+                                        {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                                    </button>
+                                </div>
+
+                                {authTab === 'signin' && (
+                                    <div className="form-link">
+                                        <button type="button" className="forgot-pwd">
+                                            Forgot password?
+                                        </button>
+                                    </div>
+                                )}
+
+                                <button type="submit" className="btn btn-submit">
+                                    {authTab === 'signin' ? 'Sign In' : 'Create Account'}
+                                </button>
+
+                                <div className="form-divider">
+                                    <span>or continue with</span>
+                                </div>
+
+                                <div className="social-buttons">
+                                    <button type="button" className="social-btn">
+                                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.39-2.37 1.025-3.195-.105-.3-.45-1.53.105-3.18 0 0 .84-.27 2.75 1.025.8-.225 1.65-.33 2.5-.33.85 0 1.7.105 2.5.33 1.91-1.29 2.75-1.025 2.75-1.025.555 1.65.21 2.88.105 3.18.64.825 1.025 1.89 1.025 3.195 0 4.605-2.805 5.625-5.475 5.92.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57C20.565 21.795 24 17.33 24 12c0-6.63-5.37-12-12-12z" />
+                                        </svg>
+                                        GitHub
+                                    </button>
+                                    <button type="button" className="social-btn">
+                                        <svg viewBox="0 0 24 24" width="16" height="16">
+                                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+                                        </svg>
+                                        Google
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                    )}
+                    </div>
+                </div>
+
+                {/* Scroll Indicator */}
+                <div className="scroll-indicator">
+                    <div className="scroll-dot"></div>
                 </div>
             </section>
 
-            {/* Role Features Section */}
-            <section className="features-section">
+            {/* Features Section */}
+            <section className="features-section" id="features">
                 <div className="section-header">
                     <h2>Tailored for Every Role</h2>
                     <p>UniPlacements serves all stakeholders in the placement ecosystem</p>
                 </div>
 
-                <div className="roles-grid">
-                    {/* Students */}
-                    <div className="role-card glass-morphism">
-                        <div className="role-icon">
-                            <FiBookOpen size={32} />
+                <div className="features-grid">
+                    <div className="feature-card">
+                        <div className="feature-icon student">
+                            <FiBookOpen size={24} />
                         </div>
                         <h3>For Students</h3>
-                        <p className="role-description">
-                            Build your verified academic profile, track placement drives, apply seamlessly, and access AI-powered preparation resources
-                        </p>
-                        <ul className="role-features">
-                            <li><FiCheckCircle size={16} /> Academic Profile Verification</li>
-                            <li><FiCheckCircle size={16} /> Job Application Tracking</li>
-                            <li><FiCheckCircle size={16} /> Interview Preparation</li>
-                            <li><FiCheckCircle size={16} /> Mock Tests & Analysis</li>
+                        <p>Build your verified academic profile, track placement drives, apply seamlessly, and access AI-powered preparation resources</p>
+                        <ul className="feature-list">
+                            <li><FiCheckCircle size={14} /> Academic Profile Verification</li>
+                            <li><FiCheckCircle size={14} /> Job Application Tracking</li>
+                            <li><FiCheckCircle size={14} /> Interview Preparation</li>
+                            <li><FiCheckCircle size={14} /> Mock Tests & Analysis</li>
                         </ul>
                     </div>
 
-                    {/* Recruiters */}
-                    <div className="role-card glass-morphism">
-                        <div className="role-icon recruiter">
-                            <FiBriefcase size={32} />
+                    <div className="feature-card">
+                        <div className="feature-icon recruiter">
+                            <FiBriefcase size={24} />
                         </div>
                         <h3>For Recruiters</h3>
-                        <p className="role-description">
-                            Access verified candidates, post campus drives with academic criteria, and streamline your hiring process
-                        </p>
-                        <ul className="role-features">
-                            <li><FiCheckCircle size={16} /> Verified Candidate Pool</li>
-                            <li><FiCheckCircle size={16} /> Advanced Filtering</li>
-                            <li><FiCheckCircle size={16} /> Drive Management</li>
-                            <li><FiCheckCircle size={16} /> Analytics Dashboard</li>
+                        <p>Access verified candidates, post campus drives with academic criteria, and streamline your hiring process</p>
+                        <ul className="feature-list">
+                            <li><FiCheckCircle size={14} /> Verified Candidate Pool</li>
+                            <li><FiCheckCircle size={14} /> Advanced Filtering</li>
+                            <li><FiCheckCircle size={14} /> Drive Management</li>
+                            <li><FiCheckCircle size={14} /> Analytics Dashboard</li>
                         </ul>
                     </div>
 
-                    {/* Placement Cells */}
-                    <div className="role-card glass-morphism">
-                        <div className="role-icon admin">
-                            <FiUsers size={32} />
+                    <div className="feature-card">
+                        <div className="feature-icon admin">
+                            <FiUsers size={24} />
                         </div>
                         <h3>For Placement Cells</h3>
-                        <p className="role-description">
-                            Manage drives, verify student records in bulk, coordinate with recruiters, and track statistics in real-time
-                        </p>
-                        <ul className="role-features">
-                            <li><FiCheckCircle size={16} /> Drive Management</li>
-                            <li><FiCheckCircle size={16} /> Bulk Verification</li>
-                            <li><FiCheckCircle size={16} /> Recruiter Coordination</li>
-                            <li><FiCheckCircle size={16} /> Real-time Analytics</li>
+                        <p>Manage drives, verify student records in bulk, coordinate with recruiters, and track statistics in real-time</p>
+                        <ul className="feature-list">
+                            <li><FiCheckCircle size={14} /> Drive Management</li>
+                            <li><FiCheckCircle size={14} /> Bulk Verification</li>
+                            <li><FiCheckCircle size={14} /> Recruiter Coordination</li>
+                            <li><FiCheckCircle size={14} /> Real-time Analytics</li>
                         </ul>
                     </div>
                 </div>
             </section>
 
-            {/* Key Features Section */}
-            <section className="highlights-section">
-                <div className="section-header">
-                    <h2>Powerful Features</h2>
-                    <p>Everything you need for seamless campus placement management</p>
-                </div>
+            {/* Featured Jobs Section */}
+            {!loading && featuredJobs.length > 0 && (
+                <section className="jobs-section" id="featured-jobs">
+                    <div className="section-header">
+                        <h2>Featured Opportunities</h2>
+                        <p>Latest job openings from verified partners</p>
+                    </div>
 
-                <div className="highlights-grid">
-                    <div className="highlight-card glass-morphism">
-                        <div className="highlight-icon">📊</div>
-                        <h4>Real-time Analytics</h4>
-                        <p>Track placements, applications, and participation statistics in real-time</p>
+                    <div className="jobs-grid">
+                        {featuredJobs.slice(0, 6).map((job) => (
+                            <div key={job._id} className="job-card">
+                                <div className="job-header">
+                                    <span className="job-company">{job.company}</span>
+                                </div>
+                                <h3 className="job-title">{job.title}</h3>
+                                <p className="job-desc">{job.description?.substring(0, 80)}...</p>
+
+                                <div className="job-meta">
+                                    {job.package && <span>💰 ₹{job.package}+ LPA</span>}
+                                    {job.minCGPA && <span>📊 CGPA: {job.minCGPA}+</span>}
+                                </div>
+
+                                <Link to="/register" className="job-link">
+                                    Apply Now <FiArrowRight size={14} />
+                                </Link>
+                            </div>
+                        ))}
                     </div>
-                    <div className="highlight-card glass-morphism">
-                        <div className="highlight-icon">🔐</div>
-                        <h4>Verified Profiles</h4>
-                        <p>All students and recruiters are verified for authentic interactions</p>
-                    </div>
-                    <div className="highlight-card glass-morphism">
-                        <div className="highlight-icon">🤖</div>
-                        <h4>AI-Powered Tools</h4>
-                        <p>Resume analysis, interview preparation, and intelligent candidate ranking</p>
-                    </div>
-                    <div className="highlight-card glass-morphism">
-                        <div className="highlight-icon">⚡</div>
-                        <h4>Seamless Integration</h4>
-                        <p>Works smoothly with academic records and existing university systems</p>
-                    </div>
-                    <div className="highlight-card glass-morphism">
-                        <div className="highlight-icon">📱</div>
-                        <h4>Mobile Responsive</h4>
-                        <p>Fully responsive design works perfectly on all devices</p>
-                    </div>
-                    <div className="highlight-card glass-morphism">
-                        <div className="highlight-icon">🛡️</div>
-                        <h4>Secure & Safe</h4>
-                        <p>Enterprise-grade security with encrypted data and compliance</p>
-                    </div>
-                </div>
-            </section>
+                </section>
+            )}
 
             {/* Active Drives Section */}
             {!loading && activeDrives.length > 0 && (
@@ -211,78 +360,34 @@ const Landing = () => {
 
                     <div className="drives-grid">
                         {activeDrives.slice(0, 6).map((drive) => (
-                            <div key={drive._id} className="drive-card glass-morphism">
-                                <div className="drive-company">{drive.company}</div>
-                                <h4 className="drive-title">{drive.title}</h4>
-                                <p className="drive-description">{drive.description?.substring(0, 100)}...</p>
-                                <div className="drive-dates">
-                                    <span className="date-label">📅</span>
-                                    <span>
-                                        {new Date(drive.startDate).toLocaleDateString()} - {new Date(drive.endDate).toLocaleDateString()}
-                                    </span>
-                                </div>
+                            <div key={drive._id} className="drive-card">
+                                <span className="drive-company">{drive.company}</span>
+                                <h3>{drive.title}</h3>
+                                <p>{drive.description?.substring(0, 100)}...</p>
+                                <p className="drive-dates">
+                                    📅 {new Date(drive.startDate).toLocaleDateString()} - {new Date(drive.endDate).toLocaleDateString()}
+                                </p>
                             </div>
                         ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Featured Jobs Section */}
-            {!loading && featuredJobs.length > 0 && (
-                <section className="jobs-section">
-                    <div className="section-header">
-                        <h2>Featured Opportunities</h2>
-                        <p>Latest job openings from verified partners</p>
-                    </div>
-
-                    <div className="jobs-grid">
-                        {featuredJobs.slice(0, 6).map((job) => (
-                            <div key={job._id} className="job-card glass-morphism">
-                                <div className="job-company">{job.company}</div>
-                                <h4 className="job-title">{job.title}</h4>
-                                <p className="job-description">{job.description?.substring(0, 100)}...</p>
-                                
-                                <div className="job-meta">
-                                    {job.package && (
-                                        <span className="meta-item">💰 ₹{job.package}+ LPA</span>
-                                    )}
-                                    {job.minCGPA && (
-                                        <span className="meta-item">📊 CGPA: {job.minCGPA}+</span>
-                                    )}
-                                </div>
-                                
-                                <Link to="/register" className="job-cta">
-                                    Apply Now <FiArrowRight size={14} />
-                                </Link>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="view-all-link">
-                        <Link to="/login" className="btn btn-outline">
-                            View All Opportunities <FiArrowRight />
-                        </Link>
                     </div>
                 </section>
             )}
 
             {/* CTA Section */}
-            <section className="cta-section glass-morphism">
-                <div className="cta-content">
-                    <h2>Ready to Start Your Journey?</h2>
-                    <p>Join thousands of students and recruiters on UniPlacements</p>
-                    <div className="cta-buttons">
-                        <Link to="/register" className="btn btn-primary btn-lg">
-                            Register Now <FiArrowRight />
-                        </Link>
-                        <Link to="/login" className="btn btn-secondary btn-lg">
-                            Already a Member? Sign In
-                        </Link>
-                    </div>
+            <section className="cta-section">
+                <h2>Ready to Start Your Journey?</h2>
+                <p>Join thousands of students and recruiters on UniPlacements</p>
+                <div className="cta-buttons">
+                    <Link to="/register" className="btn btn-primary">
+                        Register Now <FiArrowRight />
+                    </Link>
+                    <Link to="/login" className="btn btn-secondary">
+                        Already a Member? Sign In
+                    </Link>
                 </div>
             </section>
 
-            {/* Trust & Awards Section */}
+            {/* Trust Section */}
             <section className="trust-section">
                 <div className="section-header">
                     <h2>Trusted Platform</h2>
@@ -291,17 +396,17 @@ const Landing = () => {
 
                 <div className="trust-grid">
                     <div className="trust-card">
-                        <FiAward size={28} className="trust-icon" />
+                        <FiAward size={28} />
                         <h4>95%+ Success Rate</h4>
                         <p>Consistent placement success across all programs</p>
                     </div>
                     <div className="trust-card">
-                        <FiUsers size={28} className="trust-icon" />
+                        <FiUsers size={28} />
                         <h4>10k+ Placements</h4>
                         <p>Successful student placements annually</p>
                     </div>
                     <div className="trust-card">
-                        <FiBriefcase size={28} className="trust-icon" />
+                        <FiBriefcase size={28} />
                         <h4>500+ Companies</h4>
                         <p>Top organizations partnering with us</p>
                     </div>
@@ -312,7 +417,7 @@ const Landing = () => {
             <footer className="landing-footer">
                 <div className="footer-content">
                     <div className="footer-brand">
-                        <img src="/logo.png" alt="UniPlacements" className="footer-logo" />
+                        <FiAward size={20} />
                         <span>UniPlacements</span>
                     </div>
                     <p>&copy; 2026 UniPlacements - University Placement & Preparation Portal. All rights reserved.</p>
