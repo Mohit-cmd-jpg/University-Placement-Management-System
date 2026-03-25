@@ -86,7 +86,7 @@ const ATSScoreCard = ({ result }) => {
           {missingKeywords.length > 0 ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {missingKeywords.map((kw, i) => (
-                <span key={i} style={{ padding: '0.2rem 0.6rem', background: '#fff', border: '1px solid var(--border)', color: 'var(--danger)', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 500 }}>
+                <span key={i} style={{ padding: '0.2rem 0.6rem', background: '#fff', border: '1px solid var(--border)', color: 'var(--danger)', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 500 }}>
                   {kw}
                 </span>
               ))}

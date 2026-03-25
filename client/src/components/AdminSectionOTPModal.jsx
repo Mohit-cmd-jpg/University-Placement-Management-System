@@ -72,7 +72,7 @@ const AdminSectionOTPModal = ({ isOpen, onVerified, adminEmail = 'mohitbindal106
         }}>
             <div style={{
                 backgroundColor: 'var(--bg-card)',
-                borderRadius: '12px',
+                borderRadius: '8px',
                 padding: '2rem',
                 maxWidth: '420px',
                 width: '90%',
