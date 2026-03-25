@@ -21,7 +21,7 @@ const TestimonialsSection = () => {
       <div className="blob w-[400px] h-[400px] bg-primary absolute bottom-0 left-0 opacity-[0.04] animate-float-delayed" />
       <div className="container mx-auto px-4 lg:px-8" ref={ref}>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={isInView ? { opacity: 1, y: 0 } : {}} className="text-center max-w-2xl mx-auto mb-10">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-amber/10 text-amber text-xs font-semibold mb-3">Testimonials</span>
+          <span className="inline-block px-4 py-1.5 rounded-none bg-amber/10 text-amber text-xs font-semibold mb-3">Testimonials</span>
           <h2 className="font-display text-3xl lg:text-4xl font-bold text-foreground">
             Loved by students <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">across campuses</span>
           </h2>
@@ -36,7 +36,7 @@ const TestimonialsSection = () => {
                 {Array.from({ length: t.rating }).map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-amber text-amber" />)}
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-primary-foreground text-[10px] font-bold">{t.avatar}</div>
+                <div className="w-8 h-8 rounded-none gradient-bg flex items-center justify-center text-primary-foreground text-[10px] font-bold">{t.avatar}</div>
                 <div>
                   <p className="font-display font-semibold text-sm text-foreground">{t.name}</p>
                   <p className="text-[11px] text-muted-foreground">{t.role}</p>

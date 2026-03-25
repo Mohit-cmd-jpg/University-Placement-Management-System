@@ -61,7 +61,7 @@ const RoleFeaturesSection = () => {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           className="text-center max-w-2xl mx-auto mb-8"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-600/10 text-blue-600 text-xs font-semibold mb-3">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-none bg-blue-600/10 text-blue-600 text-xs font-semibold mb-3">
             <Users className="w-3.5 h-3.5" />
             Built for Every Stakeholder
           </span>

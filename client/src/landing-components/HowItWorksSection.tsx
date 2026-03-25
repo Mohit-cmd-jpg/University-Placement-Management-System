@@ -18,7 +18,7 @@ const HowItWorksSection = () => {
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background via-secondary/30 to-background" />
       <div className="container mx-auto px-4 lg:px-8" ref={ref}>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={isInView ? { opacity: 1, y: 0 } : {}} className="text-center max-w-2xl mx-auto mb-10">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-3">How It Works</span>
+          <span className="inline-block px-4 py-1.5 rounded-none bg-accent/10 text-accent text-xs font-semibold mb-3">How It Works</span>
           <h2 className="font-display text-3xl lg:text-4xl font-bold text-foreground">
             Four steps to your <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">dream career</span>
           </h2>
@@ -32,7 +32,7 @@ const HowItWorksSection = () => {
                 <div className="w-14 h-14 rounded-2xl gradient-bg flex items-center justify-center glow-ring">
                   <step.icon className="w-6 h-6 text-primary-foreground" />
                 </div>
-                <span className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-amber text-amber-foreground text-[10px] font-bold flex items-center justify-center">{step.step}</span>
+                <span className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-none bg-amber text-amber-foreground text-[10px] font-bold flex items-center justify-center">{step.step}</span>
               </div>
               <h3 className="font-display font-semibold text-base text-foreground mb-1">{step.title}</h3>
               <p className="text-muted-foreground text-sm leading-relaxed max-w-[200px] mx-auto">{step.description}</p>
