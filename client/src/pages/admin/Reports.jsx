@@ -521,7 +521,7 @@ const AdminReports = () => {
                                                             <td style={{ padding: '1rem' }}>
                                                                 <span style={{
                                                                     padding: '0.25rem 0.75rem',
-                                                                    borderRadius: '20px',
+                                                                    borderRadius: '8px',
                                                                     fontSize: '0.85rem',
                                                                     fontWeight: 600,
                                                                     backgroundColor: student.studentProfile?.isPlaced ? '#10b98140' : '#ef444440',
@@ -566,7 +566,7 @@ const AdminReports = () => {
                                                             <td style={{ padding: '1rem' }}>
                                                                 <span style={{
                                                                     padding: '0.25rem 0.75rem',
-                                                                    borderRadius: '20px',
+                                                                    borderRadius: '8px',
                                                                     fontSize: '0.85rem',
                                                                     fontWeight: 600,
                                                                     backgroundColor: job.status === 'approved' ? '#10b98140' : job.status === 'pending' ? '#f59e0b40' : '#ef444440',
@@ -611,7 +611,7 @@ const AdminReports = () => {
                                                             <td style={{ padding: '1rem' }}>
                                                                 <span style={{
                                                                     padding: '0.25rem 0.75rem',
-                                                                    borderRadius: '20px',
+                                                                    borderRadius: '8px',
                                                                     fontSize: '0.85rem',
                                                                     fontWeight: 600,
                                                                     backgroundColor: app.status === 'selected' ? '#10b98140' : app.status === 'rejected' ? '#ef444440' : app.status === 'shortlisted' ? '#3b82f640' : '#f59e0b40',

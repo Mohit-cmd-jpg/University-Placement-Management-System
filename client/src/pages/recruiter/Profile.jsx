@@ -116,9 +116,9 @@ const RecruiterProfile = () => {
                                 {/* Photo Display */}
                                 <div style={{ flex: '0 0 120px', textAlign: 'center' }}>
                                     {photoPreview ? (
-                                        <img src={photoPreview} alt="Profile" style={{ width: '120px', height: '120px', borderRadius: '12px', objectFit: 'cover', border: '2px solid var(--primary)' }} />
+                                        <img src={photoPreview} alt="Profile" style={{ width: '120px', height: '120px', borderRadius: '8px', objectFit: 'cover', border: '2px solid var(--primary)' }} />
                                     ) : (
-                                        <div style={{ width: '120px', height: '120px', borderRadius: '12px', backgroundColor: 'rgba(37, 99, 235, 0.1)', border: '2px dashed var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                        <div style={{ width: '120px', height: '120px', borderRadius: '8px', backgroundColor: 'rgba(37, 99, 235, 0.1)', border: '2px dashed var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                                             No photo
                                         </div>
                                     )}

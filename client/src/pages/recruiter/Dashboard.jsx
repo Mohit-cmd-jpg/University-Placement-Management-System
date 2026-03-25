@@ -236,7 +236,7 @@ const RecruiterDashboard = () => {
                                                             background: 'rgba(37, 99, 235, 0.1)', 
                                                             color: 'var(--primary)',
                                                             padding: '0.25rem 0.75rem',
-                                                            borderRadius: '20px',
+                                                            borderRadius: '8px',
                                                             fontSize: '0.85rem'
                                                         }}>
                                                             {app.jobTitle}
@@ -245,7 +245,7 @@ const RecruiterDashboard = () => {
                                                     <td style={{ padding: '1rem' }}>
                                                         <span style={{
                                                             padding: '0.25rem 0.75rem',
-                                                            borderRadius: '20px',
+                                                            borderRadius: '8px',
                                                             fontSize: '0.85rem',
                                                             background: app.status === 'applied' ? 'rgba(59, 130, 246, 0.1)' :
                                                                        app.status === 'shortlisted' ? 'rgba(34, 197, 94, 0.1)' :

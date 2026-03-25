@@ -162,7 +162,7 @@ const RecruiterDetail = () => {
                                     style={{
                                         width: '150px',
                                         height: '150px',
-                                        borderRadius: '16px',
+                                        borderRadius: '8px',
                                         objectFit: 'cover',
                                         border: '3px solid var(--primary)',
                                         boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)'

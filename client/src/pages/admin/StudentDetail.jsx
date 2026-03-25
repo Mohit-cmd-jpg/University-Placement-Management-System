@@ -143,7 +143,7 @@ const StudentDetail = () => {
                                     style={{
                                         width: '150px',
                                         height: '150px',
-                                        borderRadius: '16px',
+                                        borderRadius: '8px',
                                         objectFit: 'cover',
                                         border: '3px solid var(--primary)',
                                         boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)'
@@ -227,7 +227,7 @@ const StudentDetail = () => {
                                         background: 'var(--primary-glow)',
                                         color: 'var(--primary)',
                                         padding: '0.25rem 0.75rem',
-                                        borderRadius: '20px',
+                                        borderRadius: '8px',
                                         fontSize: '0.85rem',
                                         fontWeight: 500
                                     }}>
