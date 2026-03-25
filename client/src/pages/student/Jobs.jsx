@@ -149,7 +149,7 @@ const StudentJobs = () => {
                         onClick={() => setSelectedJob(null)}
                     >
                         <div
-                            style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)', maxWidth: '720px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', position: 'relative', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
+                            style={{ background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border)', maxWidth: '720px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', position: 'relative', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Close Button */}

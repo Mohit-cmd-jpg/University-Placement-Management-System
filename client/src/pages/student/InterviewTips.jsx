@@ -156,7 +156,7 @@ const InterviewTips = () => {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 background: 'rgba(99, 102, 241, 0.1)',
-                                borderRadius: '20px',
+                                borderRadius: '8px',
                                 fontSize: '2.5rem',
                                 color: 'var(--primary)',
                                 boxShadow: '0 10px 25px rgba(99,102,241,0.2)'
@@ -173,7 +173,7 @@ const InterviewTips = () => {
                         <div style={{
                             width: '100%',
                             background: 'var(--bg-card)',
-                            borderRadius: '24px',
+                            borderRadius: '8px',
                             padding: '3rem',
                             border: '1px solid var(--border)',
                             boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)'
@@ -188,7 +188,7 @@ const InterviewTips = () => {
                                         style={{
                                             width: '100%',
                                             padding: '0.9rem 1.25rem',
-                                            borderRadius: '14px',
+                                            borderRadius: '8px',
                                             fontSize: '1rem',
                                             fontWeight: 700,
                                             border: '2px solid var(--border)',
@@ -246,7 +246,7 @@ const InterviewTips = () => {
                                             onClick={() => toggleType(type.key)}
                                             style={{
                                                 padding: '0.65rem 1.25rem',
-                                                borderRadius: '12px',
+                                                borderRadius: '8px',
                                                 fontSize: '0.9rem',
                                                 fontWeight: 700,
                                                 border: `2px solid ${questionTypes[type.key] ? type.color : 'var(--border)'}`,
@@ -271,7 +271,7 @@ const InterviewTips = () => {
                                     {(sampleTopics[role] || []).map((topic, idx) => (
                                         <span key={idx} style={{
                                             padding: '0.4rem 0.9rem',
-                                            borderRadius: '20px',
+                                            borderRadius: '8px',
                                             fontSize: '0.8rem',
                                             fontWeight: 600,
                                             background: 'rgba(99, 102, 241, 0.08)',
@@ -293,7 +293,7 @@ const InterviewTips = () => {
                                     width: '100%',
                                     padding: '1.1rem',
                                     fontWeight: 800,
-                                    borderRadius: '16px',
+                                    borderRadius: '8px',
                                     fontSize: '1.15rem',
                                     boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.4)',
                                     display: 'flex',
@@ -312,7 +312,7 @@ const InterviewTips = () => {
                                 { icon: '🚀', title: 'Behavioral Prep', desc: 'Refine your soft skills & confidence' },
                                 { icon: '📈', title: 'Performance Stats', desc: 'Track scores across multiple sessions' }
                             ].map((item, idx) => (
-                                <div key={idx} style={{ padding: '1.5rem', background: 'var(--bg-dark)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                <div key={idx} style={{ padding: '1.5rem', background: 'var(--bg-dark)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
                                     <div style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>{item.icon}</div>
                                     <strong style={{ display: 'block', fontSize: '1rem', marginBottom: '0.5rem', color: 'var(--text-main)' }}>{item.title}</strong>
                                     <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>{item.desc}</p>
@@ -324,8 +324,8 @@ const InterviewTips = () => {
                     <div className="interview-session fade-in">
                         <div className="flex justify-between items-center mb-15">
                             <div className="flex items-center gap-1.5">
-                                <div style={{ background: 'var(--primary)', color: 'white', padding: '6px 14px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>{role}</div>
-                                <div style={{ background: 'var(--bg-dark)', color: 'var(--text-secondary)', padding: '6px 14px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800, border: '1px solid var(--border)' }}>
+                                <div style={{ background: 'var(--primary)', color: 'white', padding: '6px 14px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>{role}</div>
+                                <div style={{ background: 'var(--bg-dark)', color: 'var(--text-secondary)', padding: '6px 14px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, border: '1px solid var(--border)' }}>
                                     Progress: {currentQuestionIndex + 1} / {questions.length}
                                 </div>
                             </div>
@@ -335,7 +335,7 @@ const InterviewTips = () => {
                         <div className="card mb-3" style={{
                             background: 'var(--bg-card)',
                             border: '1px solid var(--border)',
-                            borderRadius: '24px',
+                            borderRadius: '8px',
                             padding: '3rem',
                             position: 'relative',
                             overflow: 'hidden',
@@ -371,7 +371,7 @@ const InterviewTips = () => {
                                                 color: 'var(--text-main)',
                                                 border: '1px solid var(--border)',
                                                 padding: '4px 12px',
-                                                borderRadius: '20px',
+                                                borderRadius: '8px',
                                                 fontSize: '0.75rem',
                                                 fontWeight: 800,
                                                 cursor: 'pointer',
@@ -390,7 +390,7 @@ const InterviewTips = () => {
                                 <div style={{
                                     flex: 1,
                                     minHeight: '600px',
-                                    borderRadius: '24px',
+                                    borderRadius: '8px',
                                     background: language === 'plaintext' ? 'var(--bg-card)' : '#1e1e1e',
                                     border: '2px solid var(--border)',
                                     overflow: 'hidden',
@@ -468,7 +468,7 @@ const InterviewTips = () => {
                                         onClick={submitAnswer}
                                         disabled={evaluating || evaluation || !activeAnswer.trim()}
                                         className="btn btn-primary"
-                                        style={{ flex: 1, padding: '1.25rem', fontWeight: 800, fontSize: '1.2rem', borderRadius: '18px', boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)' }}
+                                        style={{ flex: 1, padding: '1.25rem', fontWeight: 800, fontSize: '1.2rem', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)' }}
                                     >
                                         {evaluating ? 'Analyzing Presentation...' : 'Finalize & Submit'}
                                     </button>
@@ -491,7 +491,7 @@ const InterviewTips = () => {
                                     <div className="card text-center p-4" style={{
                                         height: '100%',
                                         minHeight: '650px',
-                                        borderRadius: '24px',
+                                        borderRadius: '8px',
                                         border: '2px dashed var(--border)',
                                         background: 'transparent',
                                         display: 'flex',
@@ -509,7 +509,7 @@ const InterviewTips = () => {
                                     <div className="card fade-in" style={{
                                         height: '100%',
                                         background: 'white',
-                                        borderRadius: '24px',
+                                        borderRadius: '8px',
                                         padding: '2rem',
                                         border: '1px solid #e2e8f0',
                                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
@@ -585,11 +585,11 @@ const InterviewTips = () => {
 
                                         <div style={{ display: 'flex', gap: '0.75rem' }}>
                                             {currentQuestionIndex < questions.length - 1 ? (
-                                                <button onClick={nextQuestion} className="btn btn-primary w-100" style={{ padding: '1rem', borderRadius: '16px', fontWeight: 800, fontSize: '1rem' }}>
+                                                <button onClick={nextQuestion} className="btn btn-primary w-100" style={{ padding: '1rem', borderRadius: '8px', fontWeight: 800, fontSize: '1rem' }}>
                                                     Next Question →
                                                 </button>
                                             ) : (
-                                                <button onClick={endSession} className="btn btn-success w-100" style={{ padding: '1rem', borderRadius: '16px', fontWeight: 800, fontSize: '1rem', background: '#10b981' }}>
+                                                <button onClick={endSession} className="btn btn-success w-100" style={{ padding: '1rem', borderRadius: '8px', fontWeight: 800, fontSize: '1rem', background: '#10b981' }}>
                                                     Finish Interview
                                                 </button>
                                             )}

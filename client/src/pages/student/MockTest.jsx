@@ -196,7 +196,7 @@ const MockTest = () => {
                 style={{
                     minHeight: '80vh',
                     background: 'var(--bg-dark)',
-                    borderRadius: '12px',
+                    borderRadius: '8px',
                     overflowY: 'auto',
                     padding: '1px', // Prevents margin collapse
                     position: 'relative'
