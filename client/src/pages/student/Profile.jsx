@@ -149,9 +149,9 @@ const StudentProfile = () => {
                                 {/* Photo Display */}
                                 <div style={{ flex: '0 0 120px', textAlign: 'center' }}>
                                     {photoPreview ? (
-                                        <img src={photoPreview} alt="Profile" style={{ width: '120px', height: '120px', borderRadius: '12px', objectFit: 'cover', border: '2px solid var(--primary)' }} />
+                                        <img src={photoPreview} alt="Profile" style={{ width: '120px', height: '120px', borderRadius: '8px', objectFit: 'cover', border: '2px solid var(--primary)' }} />
                                     ) : (
-                                        <div style={{ width: '120px', height: '120px', borderRadius: '12px', backgroundColor: 'rgba(37, 99, 235, 0.1)', border: '2px dashed var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                        <div style={{ width: '120px', height: '120px', borderRadius: '8px', backgroundColor: 'rgba(37, 99, 235, 0.1)', border: '2px dashed var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                                             No photo
                                         </div>
                                     )}
@@ -247,7 +247,7 @@ const StudentProfile = () => {
                             </div>
 
                             {user?.studentProfile?.aiResumeAnalysis?.resumeScore > 0 && (
-                                <div style={{ marginTop: '2rem', background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                <div style={{ marginTop: '2rem', background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
                                     <h4 style={{ marginBottom: '1rem', color: 'var(--primary)' }}>Full AI Resume Analysis</h4>
 
                                     <div className="grid-cols-1-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>

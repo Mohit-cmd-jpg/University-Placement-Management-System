@@ -279,7 +279,7 @@ const StudentDashboard = () => {
                                                 <div className="grid-cols-1-mobile" style={{ display: 'grid', gridTemplateColumns: '210px 1fr', gap: '1rem', alignItems: 'center' }}>
                                                     <div style={{
                                                         border: '1px solid var(--border)',
-                                                        borderRadius: '14px',
+                                                        borderRadius: '8px',
                                                         background: 'var(--bg-dark)',
                                                         padding: '0.85rem',
                                                         display: 'flex',
@@ -319,7 +319,7 @@ const StudentDashboard = () => {
 
                                                     <div style={{
                                                         border: '1px solid var(--border)',
-                                                        borderRadius: '14px',
+                                                            borderRadius: '8px',
                                                         background: 'radial-gradient(circle at 50% 25%, #ffffff10 0%, transparent 65%), var(--bg-dark)',
                                                         padding: '0.85rem 0.9rem 0.5rem',
                                                     }}>
@@ -364,7 +364,7 @@ const StudentDashboard = () => {
                                                         return (
                                                             <div key={c.key} style={{
                                                                 border: '1px solid var(--border)',
-                                                                borderRadius: '12px',
+                                                                borderRadius: '8px',
                                                                 background: 'var(--bg-dark)',
                                                                 padding: '0.6rem 0.65rem',
                                                                 display: 'flex',
