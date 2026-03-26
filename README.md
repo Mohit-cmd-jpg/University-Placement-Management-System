@@ -547,4 +547,3 @@ For enterprises deploying to production:
 
 
 
-<!-- Performance: Cache layer optimization in progress -->
