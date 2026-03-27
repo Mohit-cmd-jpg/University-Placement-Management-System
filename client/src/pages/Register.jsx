@@ -2,20 +2,44 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { getPasswordValidationFeedback, getPasswordStrengthLevel } from '../utils/passwordValidator';
 
 const Register = () => {
     const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', role: 'student' });
     const [otp, setOtp] = useState('');
     const [step, setStep] = useState(1); // 1: Details, 2: OTP Verification
     const [loading, setLoading] = useState(false);
+    const [passwordFeedback, setPasswordFeedback] = useState(null);
     const navigate = useNavigate();
 
-    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setForm({ ...form, [name]: value });
+        
+        // Update password feedback when password changes
+        if (name === 'password') {
+            setPasswordFeedback(getPasswordValidationFeedback(value));
+        }
+    };
+
+    const isPasswordValid = passwordFeedback?.isValid || false;
+    const passwordStrength = getPasswordStrengthLevel(form.password);
 
     const handleSendOTP = async (e) => {
         e.preventDefault();
+        
+        if (!form.name.trim()) return toast.error('Name is required');
+        if (!form.email.trim()) return toast.error('Email is required');
         if (form.password !== form.confirmPassword) return toast.error('Passwords do not match');
-        if (form.password.length < 6) return toast.error('Password must be at least 6 characters');
+        
+        // Check password strength
+        if (!isPasswordValid) {
+            const errors = passwordFeedback?.requirements
+                .filter(r => !r.satisfied)
+                .map(r => r.rule)
+                .join(', ');
+            return toast.error(`Password requirements not met: ${errors}`);
+        }
 
         setLoading(true);
         try {
@@ -35,7 +59,8 @@ const Register = () => {
 
             setStep(2);
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to send OTP. Please try again.');
+            const errorMessage = err.response?.data?.error || 'Failed to send OTP. Please try again.';
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -72,7 +97,8 @@ const Register = () => {
             toast.success('Account verified and created!');
             window.location.href = res.data.user.role === 'recruiter' ? '/recruiter/dashboard' : '/student/dashboard';
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Verification failed. Invalid OTP?');
+            const errorMessage = err.response?.data?.error || 'Verification failed. Invalid OTP?';
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -103,13 +129,76 @@ const Register = () => {
                             </div>
                             <div className="form-group">
                                 <label>Password</label>
-                                <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="Min 6 characters" required />
+                                <input 
+                                    name="password" 
+                                    type="password" 
+                                    value={form.password} 
+                                    onChange={handleChange} 
+                                    placeholder="Create a strong password" 
+                                    required 
+                                />
+                                {form.password && (
+                                    <div style={{ marginTop: '0.5rem' }}>
+                                        <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                                            Strength: <strong style={{
+                                                color: passwordStrength === 'Strong' ? '#10b981' :
+                                                       passwordStrength === 'Good' ? '#f59e0b' :
+                                                       passwordStrength === 'Fair' ? '#f97316' :
+                                                       '#ef4444'
+                                            }}>
+                                                {passwordStrength}
+                                            </strong>
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                            {passwordFeedback?.requirements.map((req, idx) => (
+                                                <div key={idx} style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    marginBottom: '0.25rem'
+                                                }}>
+                                                    <span style={{
+                                                        color: req.satisfied ? '#10b981' : '#ccc'
+                                                    }}>
+                                                        {req.satisfied ? '✓' : '✗'}
+                                                    </span>
+                                                    <span style={{
+                                                        color: req.satisfied ? '#10b981' : '#999'
+                                                    }}>
+                                                        {req.rule}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className="form-group">
                                 <label>Confirm Password</label>
-                                <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} placeholder="Confirm password" required />
+                                <input 
+                                    name="confirmPassword" 
+                                    type="password" 
+                                    value={form.confirmPassword} 
+                                    onChange={handleChange} 
+                                    placeholder="Re-enter your password" 
+                                    required 
+                                />
+                                {form.confirmPassword && form.password !== form.confirmPassword && (
+                                    <div style={{ fontSize: '0.875rem', color: '#ef4444', marginTop: '0.25rem' }}>
+                                        ✗ Passwords do not match
+                                    </div>
+                                )}
+                                {form.confirmPassword && form.password === form.confirmPassword && (
+                                    <div style={{ fontSize: '0.875rem', color: '#10b981', marginTop: '0.25rem' }}>
+                                        ✓ Passwords match
+                                    </div>
+                                )}
                             </div>
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                            <button 
+                                type="submit" 
+                                className="btn btn-primary" 
+                                disabled={loading || !isPasswordValid || form.password !== form.confirmPassword}
+                            >
                                 {loading ? 'Sending OTP...' : 'Send Verification OTP'}
                             </button>
                         </form>

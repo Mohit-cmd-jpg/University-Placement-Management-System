@@ -10,6 +10,7 @@ const { otpRequestLimiter, otpVerifyLimiter, loginLimiter } = require('../middle
 const { validateSchema } = require('../utils/validationSchemas');
 const { authSchemas } = require('../utils/validationSchemas');
 const { createApiSecurityMiddleware, securityProfiles } = require('../middleware/apiSecurity');
+const { validatePasswordStrength } = require('../utils/passwordValidator');
 // PHASE 2: Import concurrency utilities for distributed state management
 const { 
     recordFailedLoginAttempt, 
@@ -24,23 +25,42 @@ const getAdminContactEmail = () => {
 };
 
 // Phase 1: Request OTP for Signup - with strict API security
+// PHASE 2: Enforce strong password rules for NEW registrations
 router.post('/register-otp', [
     ...createApiSecurityMiddleware(securityProfiles.auth),
     otpRequestLimiter,
     validateSchema(authSchemas.registerOtp, 'body'),
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    // REMOVED: The strong password validation now happens in authSchemas.registerOtp
     body('role').isIn(['student', 'recruiter']).withMessage('Role must be student or recruiter')
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            // Format validation errors for better UX
+            const formattedErrors = errors.array().map(err => ({
+                field: err.param,
+                message: err.msg
+            }));
+            return res.status(400).json({ 
+                error: 'Validation failed. Please check your input.',
+                errors: formattedErrors
+            });
         }
 
-        const { email } = req.body;
+        const { email, password } = req.body;
         const normalizedEmail = email.toLowerCase().trim();
+
+        // Additional validation: Check password strength with detailed feedback
+        const passwordValidation = validatePasswordStrength(password);
+        if (!passwordValidation.isValid) {
+            return res.status(400).json({ 
+                error: 'Password does not meet security requirements.',
+                passwordErrors: passwordValidation.errors,
+                details: 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character (!@#$%^&*)'
+            });
+        }
 
         // Check if user already exists
         const existingUser = await User.findOne({ email: normalizedEmail });
@@ -93,13 +113,14 @@ router.post('/register-otp', [
 });
 
 // Phase 2: Verify OTP and Create Account - with strict API security
+// PHASE 2: Enforce strong password rules for NEW registrations
 router.post('/register-verify', [
     ...createApiSecurityMiddleware(securityProfiles.auth),
     otpVerifyLimiter,
     validateSchema(authSchemas.registerVerify, 'body'),
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    // REMOVED: The strong password validation now happens in authSchemas.registerVerify
     body('role').isIn(['student', 'recruiter']).withMessage('Role must be student or recruiter'),
     body('otp').trim().isLength({ min: 6, max: 6 }).withMessage('Valid 6-digit OTP is required')
 ], async (req, res) => {
@@ -107,9 +128,13 @@ router.post('/register-verify', [
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             console.error('[AUTH] Register-verify validation errors:', errors.array());
+            const formattedErrors = errors.array().map(err => ({
+                field: err.param,
+                message: err.msg
+            }));
             return res.status(400).json({ 
                 error: 'Validation failed',
-                errors: errors.array(),
+                errors: formattedErrors,
                 details: errors.array().map(e => `${e.param}: ${e.msg}`).join('; ')
             });
         }
@@ -118,6 +143,16 @@ router.post('/register-verify', [
         const email = req.body.email.toLowerCase().trim();
 
         console.log('[AUTH] Register-verify attempt:', { email, role, otpLength: otp.length });
+
+        // Additional validation: Check password strength with detailed feedback
+        const passwordValidation = validatePasswordStrength(password);
+        if (!passwordValidation.isValid) {
+            return res.status(400).json({ 
+                error: 'Password does not meet security requirements.',
+                passwordErrors: passwordValidation.errors,
+                details: 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character (!@#$%^&*)'
+            });
+        }
 
         // PHASE 2: Use versioning for safe OTP verification with attempt tracking
         const otpVerifyResult = await verifyOTPWithVersioning(email, otp, 'registration');
@@ -342,20 +377,39 @@ router.post('/forgot-password-otp', [
 });
 
 // Phase 4: Forgot Password - Verify OTP and Reset Password
+// PHASE 2: Enforce strong password rules for password resets
 router.post('/reset-password', [
     otpVerifyLimiter,
+    validateSchema(authSchemas.resetPassword, 'body'),
     body('email').isEmail().withMessage('Valid email is required'),
-    body('otp').isLength({ min: 6, max: 6 }).withMessage('Valid 6-digit OTP is required'),
-    body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
+    body('otp').isLength({ min: 6, max: 6 }).withMessage('Valid 6-digit OTP is required')
+    // REMOVED: The strong password validation now happens in authSchemas.resetPassword
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            const formattedErrors = errors.array().map(err => ({
+                field: err.param,
+                message: err.msg
+            }));
+            return res.status(400).json({ 
+                error: 'Validation failed. Please check your input.',
+                errors: formattedErrors
+            });
         }
 
         const email = req.body.email.toLowerCase().trim();
         const { otp, newPassword } = req.body;
+
+        // Additional validation: Check password strength with detailed feedback
+        const passwordValidation = validatePasswordStrength(newPassword);
+        if (!passwordValidation.isValid) {
+            return res.status(400).json({ 
+                error: 'Password does not meet security requirements.',
+                passwordErrors: passwordValidation.errors,
+                details: 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character (!@#$%^&*)'
+            });
+        }
 
         // Check if user exists and is verified
         const user = await User.findOne({ email });

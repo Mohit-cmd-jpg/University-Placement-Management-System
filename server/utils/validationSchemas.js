@@ -21,6 +21,7 @@ const schemas = {
     }),
 
   // Password validation (min 6 chars, no special requirements to not break existing users)
+  // IMPORTANT: Used only for LOGIN - does NOT enforce strong password requirements
   password: Joi.string()
     .min(6)
     .max(128)
@@ -28,6 +29,21 @@ const schemas = {
     .messages({
       'string.min': 'Password must be at least 6 characters',
       'string.max': 'Password must not exceed 128 characters',
+      'any.required': 'Password is required'
+    }),
+
+  // Strong Password validation for NEW registrations and password resets
+  // PHASE 1: Enforce strong password rules for new accounts
+  // Requirements: 8+ chars, 1 uppercase, 1 lowercase, 1 digit, 1 special char (!@#$%^&*)
+  strongPassword: Joi.string()
+    .min(8)
+    .max(128)
+    .required()
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/)
+    .messages({
+      'string.min': 'Password must be at least 8 characters long',
+      'string.max': 'Password must not exceed 128 characters',
+      'string.pattern.base': 'Password must contain uppercase, lowercase, number, and special character (!@#$%^&*)',
       'any.required': 'Password is required'
     }),
 
@@ -142,23 +158,27 @@ const schemas = {
 
 const authSchemas = {
   // POST /api/auth/register-otp
+  // PHASE 2: Use strong password validation for NEW registrations
   registerOtp: Joi.object({
     name: schemas.name,
     email: schemas.email,
-    password: schemas.password,
+    password: schemas.strongPassword,
     role: schemas.role
   }).unknown(false),
 
   // POST /api/auth/register-verify
+  // PHASE 2: Use strong password validation for NEW registrations
   registerVerify: Joi.object({
     name: schemas.name,
     email: schemas.email,
-    password: schemas.password,
+    password: schemas.strongPassword,
     role: schemas.role,
     otp: schemas.otp
   }).unknown(false),
 
   // POST /api/auth/login
+  // IMPORTANT: Does NOT enforce strong password to maintain backward compatibility
+  // Existing users with weak passwords can still login
   login: Joi.object({
     email: schemas.email,
     password: schemas.password
@@ -175,10 +195,11 @@ const authSchemas = {
   }).unknown(false),
 
   // POST /api/auth/reset-password
+  // PHASE 2: Use strong password validation for password resets
   resetPassword: Joi.object({
     otp: schemas.otp,
     email: schemas.email,
-    newPassword: schemas.password
+    newPassword: schemas.strongPassword
   }).unknown(false)
 };
 

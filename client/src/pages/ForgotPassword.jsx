@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { getPasswordValidationFeedback, getPasswordStrengthLevel } from '../utils/passwordValidator';
 
 const ForgotPassword = () => {
     const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password, 4: Success
@@ -10,7 +11,11 @@ const ForgotPassword = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [passwordFeedback, setPasswordFeedback] = useState(null);
     const navigate = useNavigate();
+
+    const isPasswordValid = passwordFeedback?.isValid || false;
+    const passwordStrength = getPasswordStrengthLevel(newPassword);
 
     // Step 1: Request OTP
     const handleRequestOtp = async (e) => {
@@ -41,9 +46,17 @@ const ForgotPassword = () => {
             return;
         }
 
-        if (!newPassword || newPassword.length < 6) {
-            toast.error('Password must be at least 6 characters');
+        if (!newPassword) {
+            toast.error('Please enter a new password');
             return;
+        }
+
+        if (!isPasswordValid) {
+            const errors = passwordFeedback?.requirements
+                .filter(r => !r.satisfied)
+                .map(r => r.rule)
+                .join(', ');
+            return toast.error(`Password requirements not met: ${errors}`);
         }
 
         if (newPassword !== confirmPassword) {
@@ -65,7 +78,8 @@ const ForgotPassword = () => {
                 navigate('/login');
             }, 2000);
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Password reset failed');
+            const errorMessage = err.response?.data?.error || 'Password reset failed';
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -151,7 +165,7 @@ const ForgotPassword = () => {
                                 <input
                                     type="text"
                                     value={otp}
-                                    onChange={(e) => setOtp(e.target.value.slice(0, 6))}
+                                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                     placeholder="Enter 6-digit OTP"
                                     maxLength="6"
                                     required
@@ -163,10 +177,48 @@ const ForgotPassword = () => {
                                 <input
                                     type="password"
                                     value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    placeholder="Enter new password (min. 6 characters)"
+                                    onChange={(e) => {
+                                        setNewPassword(e.target.value);
+                                        setPasswordFeedback(getPasswordValidationFeedback(e.target.value));
+                                    }}
+                                    placeholder="Create a strong password"
                                     required
                                 />
+                                {newPassword && (
+                                    <div style={{ marginTop: '0.5rem' }}>
+                                        <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                                            Strength: <strong style={{
+                                                color: passwordStrength === 'Strong' ? '#10b981' :
+                                                       passwordStrength === 'Good' ? '#f59e0b' :
+                                                       passwordStrength === 'Fair' ? '#f97316' :
+                                                       '#ef4444'
+                                            }}>
+                                                {passwordStrength}
+                                            </strong>
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                            {passwordFeedback?.requirements.map((req, idx) => (
+                                                <div key={idx} style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    marginBottom: '0.25rem'
+                                                }}>
+                                                    <span style={{
+                                                        color: req.satisfied ? '#10b981' : '#ccc'
+                                                    }}>
+                                                        {req.satisfied ? '✓' : '✗'}
+                                                    </span>
+                                                    <span style={{
+                                                        color: req.satisfied ? '#10b981' : '#999'
+                                                    }}>
+                                                        {req.rule}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className="form-group">
                                 <label>Confirm Password</label>
@@ -174,11 +226,25 @@ const ForgotPassword = () => {
                                     type="password"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="Confirm your new password"
+                                    placeholder="Re-enter your new password"
                                     required
                                 />
+                                {confirmPassword && newPassword !== confirmPassword && (
+                                    <div style={{ fontSize: '0.875rem', color: '#ef4444', marginTop: '0.25rem' }}>
+                                        ✗ Passwords do not match
+                                    </div>
+                                )}
+                                {confirmPassword && newPassword === confirmPassword && (
+                                    <div style={{ fontSize: '0.875rem', color: '#10b981', marginTop: '0.25rem' }}>
+                                        ✓ Passwords match
+                                    </div>
+                                )}
                             </div>
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                            <button 
+                                type="submit" 
+                                className="btn btn-primary" 
+                                disabled={loading || !isPasswordValid || newPassword !== confirmPassword}
+                            >
                                 {loading ? 'Resetting Password...' : 'Reset Password'}
                             </button>
                         </form>
