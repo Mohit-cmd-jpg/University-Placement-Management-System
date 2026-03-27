@@ -8,6 +8,7 @@ import heroBg from "@/assets/hero-bg.jpg";
 import { useAuth } from "../context/AuthContext";
 import { authAPI } from "../services/api";
 import toast from "react-hot-toast";
+import { getPasswordValidationFeedback, getPasswordStrengthLevel } from "../utils/passwordValidator";
 
 const HeroSection = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,6 +19,7 @@ const HeroSection = () => {
   const [role, setRole] = useState("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordFeedback, setPasswordFeedback] = useState(null);
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,17 @@ const HeroSection = () => {
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password || !role) return toast.error("Please fill all fields");
-    if (password.length < 6) return toast.error("Password must be at least 6 characters");
+    
+    // Check password strength for registration
+    const feedback = getPasswordValidationFeedback(password);
+    if (!feedback.isValid) {
+      const errors = feedback.requirements
+        .filter((r: any) => !r.satisfied)
+        .map((r: any) => r.rule)
+        .join(", ");
+      return toast.error(`Password requirements not met: ${errors}`);
+    }
+    
     setLoading(true);
     try {
       const res = await authAPI.registerOtp({ name, email, password, role });
@@ -232,11 +244,61 @@ const HeroSection = () => {
                     <div className="form-group" style={{ textAlign: 'left', marginTop: '1rem' }}>
                       <label style={{ color: 'var(--text-primary)', fontWeight: 500, display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Password</label>
                       <div style={{ position: 'relative' }}>
-                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={authTab === "register" ? "Min 6 characters" : "Enter your password"} required style={{ width: '100%', padding: '1rem 1.2rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }} />
+                        <input 
+                          type={showPassword ? "text" : "password"} 
+                          value={password} 
+                          onChange={(e) => {
+                            setPassword(e.target.value);
+                            if (authTab === "register") {
+                              setPasswordFeedback(getPasswordValidationFeedback(e.target.value));
+                            }
+                          }} 
+                          placeholder={authTab === "register" ? "Create a strong password" : "Enter your password"} 
+                          required 
+                          style={{ width: '100%', padding: '1rem 1.2rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }} 
+                        />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </div>
+                      {authTab === "register" && password && passwordFeedback && (
+                        <div style={{ marginTop: '0.75rem' }}>
+                          <div style={{ fontSize: '0.8rem', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>Strength:</span>
+                            <span style={{
+                              fontWeight: 600,
+                              color: getPasswordStrengthLevel(password) === 'Strong' ? '#10b981' :
+                                     getPasswordStrengthLevel(password) === 'Good' ? '#f59e0b' :
+                                     getPasswordStrengthLevel(password) === 'Fair' ? '#f97316' :
+                                     '#ef4444'
+                            }}>
+                              {getPasswordStrengthLevel(password)}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            {passwordFeedback.requirements.map((req: any, idx: number) => (
+                              <div key={idx} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                marginBottom: '0.3rem'
+                              }}>
+                                <span style={{
+                                  color: req.satisfied ? '#10b981' : '#ccc',
+                                  fontWeight: 600
+                                }}>
+                                  {req.satisfied ? '✓' : '✗'}
+                                </span>
+                                <span style={{
+                                  color: req.satisfied ? '#10b981' : 'var(--text-secondary)'
+                                }}>
+                                  {req.rule}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -247,7 +309,12 @@ const HeroSection = () => {
                   </div>
                 )}
 
-                <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: (authTab === "register" || step === 2) ? '1.5rem' : '0' }}>
+                <button 
+                  type="submit" 
+                  disabled={loading || (authTab === "register" && step === 1 && passwordFeedback && !passwordFeedback.isValid)} 
+                  className="btn btn-primary" 
+                  style={{ width: '100%', marginTop: (authTab === "register" || step === 2) ? '1.5rem' : '0', opacity: (loading || (authTab === "register" && step === 1 && passwordFeedback && !passwordFeedback.isValid)) ? 0.5 : 1 }}
+                >
                   {loading 
                     ? (authTab === "signin" ? "Signing In..." : step === 1 ? "Sending OTP..." : "Verifying...") 
                     : (authTab === "signin" ? "Sign In" : step === 1 ? "Create Account" : "Verify & Create")}
