@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 // const cors = require('cors'); // Moved to middleware/corsConfig.js
 
 const morgan = require('morgan');
-const helmet = require('helmet');
+// const helmet = require('helmet'); // Moved to middleware/securityConfig.js
+
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
@@ -25,29 +26,9 @@ const app = express();
 // Vercel sets X-Forwarded-For header, Express needs to trust it
 app.set('trust proxy', 1);
 
-// Enhanced Security Headers with Helmet
-// Includes HSTS, CSP, X-Frame-Options, and other best practices
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", "https://vercel.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.openrouter.io"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      mediaSrc: ["'self'"],
-      objectSrc: ["'none'"],
-    }
-  },
-  hsts: {
-    maxAge: 31536000, // 1 year in seconds
-    includeSubDomains: true,
-    preload: true
-  },
-  frameguard: { action: 'deny' },
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
-}));
+const securityMiddleware = require('./middleware/securityConfig');
+app.use(securityMiddleware);
+
 
 // Security Middlewares
 const corsMiddleware = require('./middleware/corsConfig');
