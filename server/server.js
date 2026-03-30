@@ -5,18 +5,20 @@ const morgan = require('morgan');
 
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-require('dotenv').config();
-const { setupExpiryCheckInterval } = require('./services/expiryService');
+const logger = require('./utils/logger');
 
-// Validate critical environment variables
+/**
+ * Validate critical environment variables
+ */
 if (!process.env.MONGODB_URI) {
-  console.error('ERROR: MONGODB_URI is not set. Startup halted.');
+  logger.error('MONGODB_URI is not set. Startup halted.');
   process.exit(1);
 }
 if (!process.env.JWT_SECRET) {
-  console.error('ERROR: JWT_SECRET is not set. Startup halted.');
+  logger.error('JWT_SECRET is not set. Startup halted.');
   process.exit(1);
 }
+
 
 const app = express();
 
@@ -40,9 +42,10 @@ app.use(corsMiddleware);
 const mongoSanitize = require('express-mongo-sanitize');
 app.use(mongoSanitize({
   onSanitize: ({ req, key }) => {
-    console.warn(`[SECURITY] Sanitized potentially malicious key in request: ${key}`);
+    logger.security(`Sanitized potentially malicious key in request: ${key}`, { path: req.path });
   }
 }));
+
 
 /**
  * XSS Protection - Prevent Cross-Site Scripting attacks
@@ -54,10 +57,11 @@ app.use(xss({
   stripIgnoreTag: true,
   onTag: (tag, html, options) => {
     if (tag && !['b', 'strong', 'i', 'em', 'u', 'br'].includes(tag.toLowerCase())) {
-      console.warn(`[SECURITY] HTML tag attempt detected: ${tag}`);
+      logger.security(`HTML tag attempt detected: ${tag}`, { tag });
     }
   }
 }));
+
 
 /**
  * MongoDB Connection Middleware (Serverless-optimized)
@@ -74,13 +78,14 @@ app.use(async (req, res, next) => {
       serverSelectionTimeoutMS: 5000
     });
     isConnected = true;
-    console.log('✅ Connected to MongoDB');
+    logger.info('Connected to MongoDB Atlas');
     next();
   } catch (err) {
-    console.error('❌ MongoDB connection error:', err.message);
+    logger.error(`MongoDB connection error: ${err.message}`, { error: err });
     return res.status(500).json({ error: `Database connection failed: ${err.message}` });
   }
 });
+
 
 /**
  * Global and AI-specific Rate Limiting
@@ -170,9 +175,10 @@ if (process.env.NODE_ENV !== 'production' && require.main === module) {
 if (process.env.NODE_ENV !== 'production' || require.main === module) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+    logger.info(`Server running on port ${PORT}`, { port: PORT, env: process.env.NODE_ENV });
   });
 }
+
 
 
 module.exports = app;

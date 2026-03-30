@@ -1,3 +1,5 @@
+const logger = require('../utils/logger');
+
 /**
  * Global error handling middleware for the University Placement System.
  * Standardizes error responses and prevents sensitive information disclosure in production.
@@ -7,7 +9,8 @@ const errorHandler = (err, req, res, next) => {
   const errorId = req.id || `ERR_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 5)}`.toUpperCase();
   
   // Log full error server-side for debugging
-  console.error(`[${errorId}] Error: ${err.stack || err.message}`);
+  logger.error(`[${errorId}] Error: ${err.message}`, { error: err, errorId });
+
   
   // Default status code
   const statusCode = err.statusCode || err.status || 500;
