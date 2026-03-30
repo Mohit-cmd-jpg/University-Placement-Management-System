@@ -26,17 +26,19 @@ const app = express();
 // Vercel sets X-Forwarded-For header, Express needs to trust it
 app.set('trust proxy', 1);
 
+/**
+ * Security middleware registration.
+ * Includes CORS, Helmet, NoSQL sanitization, and XSS protection.
+ */
 const securityMiddleware = require('./middleware/securityConfig');
-app.use(securityMiddleware);
-
-
-// Security Middlewares
 const corsMiddleware = require('./middleware/corsConfig');
+app.use(securityMiddleware);
 app.use(corsMiddleware);
 
-
-// Input Sanitization - Prevent NoSQL injection attacks
-// sanitize user input data by escaping $ and . characters in object keys
+/**
+ * Input Sanitization - Prevent NoSQL injection attacks
+ * Escapes characters like $ and . in user-supplied object keys.
+ */
 const mongoSanitize = require('express-mongo-sanitize');
 app.use(mongoSanitize({
   onSanitize: ({ req, key }) => {
@@ -44,22 +46,25 @@ app.use(mongoSanitize({
   }
 }));
 
-// XSS Protection - Prevent Cross-Site Scripting attacks
-// Cleans user input by escaping HTML/JS patterns
+/**
+ * XSS Protection - Prevent Cross-Site Scripting attacks
+ * Strips potentially malicious HTML/JS patterns from user input.
+ */
 const xss = require('xss-clean');
 app.use(xss({
-  whiteList: {}, // Remove HTML tags from string values (very strict)
+  whiteList: {}, // Strict: remove all HTML tags
   stripIgnoreTag: true,
   onTag: (tag, html, options) => {
-    // Log suspicious HTML attempts
     if (tag && !['b', 'strong', 'i', 'em', 'u', 'br'].includes(tag.toLowerCase())) {
       console.warn(`[SECURITY] HTML tag attempt detected: ${tag}`);
     }
   }
 }));
 
-// Serverless DB Connection Middleware
-// This guarantees Vercel establishes a connection BEFORE routing the request
+/**
+ * MongoDB Connection Middleware (Serverless-optimized)
+ * Ensures a database connection is active before processing any requests.
+ */
 let isConnected = false;
 app.use(async (req, res, next) => {
   if (isConnected || mongoose.connection.readyState === 1) {
@@ -68,7 +73,7 @@ app.use(async (req, res, next) => {
   }
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000 // Fail fast if Vercel IPs are blocked by Atlas
+      serverSelectionTimeoutMS: 5000
     });
     isConnected = true;
     console.log('✅ Connected to MongoDB');
@@ -79,71 +84,76 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Rate limiting
+/**
+ * Global and AI-specific Rate Limiting
+ * Prevents abuse and manages resource consumption for LLM endpoints.
+ */
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 2000, // Increase limit for Vercel environment
+  windowMs: 15 * 60 * 1000,
+  max: 2000,
   message: { error: 'Too many requests, please try again later.' },
-  standardHeaders: false, // Don't return rate limit info in headers
-  skip: (req, res) => {
-    // Skip rate limiting for health checks
-    return req.path === '/api/health' || req.path === '/health';
-  }
+  standardHeaders: false,
+  skip: (req, res) => req.path === '/api/health' || req.path === '/health'
 });
 app.use('/api/', limiter);
 
-// AI-specific rate limiting (more restrictive to prevent abuse)
 const aiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 requests per minute for AI endpoints
-  message: { success: false, message: 'Too many AI requests. Please wait before trying again.' },
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { success: false, message: 'Too many AI requests. Please wait.' },
   standardHeaders: false
 });
-
-// Apply AI limiter to AI-intensive endpoints
-app.use('/api/preparation/generate-questions', aiLimiter);
-app.use('/api/preparation/generate-test', aiLimiter);
+app.use(['/api/preparation/generate-questions', '/api/preparation/generate-test', '/api/students/analyze-resume'], aiLimiter);
 app.use('/api/applications/.*\\/ai-', aiLimiter);
-app.use('/api/students/analyze-resume', aiLimiter);
 
-// Body parsing - with size limits to prevent DoS attacks
+/**
+ * Standard Express Middleware
+ * Handles body parsing, logging, and static file serving.
+ */
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Logging
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 } else {
   app.use(morgan('combined'));
 }
 
-// Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Request ID middleware for tracing and logging
+/**
+ * Request ID Middleware
+ * Assigns a unique trace ID to each incoming request for auditing and debugging.
+ */
 app.use((req, res, next) => {
   req.id = `REQ_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 5)}`.toUpperCase();
   res.setHeader('X-Request-ID', req.id);
   next();
 });
 
-// Routes
-app.use('/api/public', require('./routes/public'));  // Public landing page data
+/**
+ * API Route Registration
+ * Defines the main entry points for the application's REST API.
+ */
+app.use('/api/public', require('./routes/public'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/recruiters', require('./routes/recruiters'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/applications', require('./routes/applications'));
 app.use('/api/admin', require('./routes/admin'));
-app.use('/api/admin-ats', require('./routes/adminRoutes')); // ATS custom routes
-app.use('/api/resume', require('./routes/resumeRoutes'));   // Resume parsing functionality
+app.use('/api/admin-ats', require('./routes/adminRoutes'));
+app.use('/api/resume', require('./routes/resumeRoutes'));
 app.use('/api/preparation', require('./routes/preparation'));
 app.use('/api/notifications', require('./routes/notifications'));
 
-// Health check
+/**
+ * Health Check Endpoint
+ */
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
 
 // Global error and 404 handlers
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
