@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { notificationAPI } from '../services/api';
+import { useNotifications } from '../hooks/useNotifications';
 import { FiBell } from 'react-icons/fi';
 
 /**
@@ -16,16 +16,9 @@ const Navbar = ({ title = 'Placement Portal' }) => {
 
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    const { notifications, unreadCount, fetchNotifications, markAsRead } = useNotifications();
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
-
-    useEffect(() => {
-        fetchUnreadCount();
-        const interval = setInterval(fetchUnreadCount, 30000);
-        return () => clearInterval(interval);
-    }, []);
 
     useEffect(() => {
         const handleClick = (e) => {
@@ -37,30 +30,13 @@ const Navbar = ({ title = 'Placement Portal' }) => {
         return () => document.removeEventListener('mousedown', handleClick);
     }, []);
 
-    const fetchUnreadCount = async () => {
-        try {
-            const res = await notificationAPI.getUnreadCount();
-            setUnreadCount(res.data.count);
-        } catch { }
-    };
-
     const handleBellClick = async () => {
         setShowDropdown(!showDropdown);
         if (!showDropdown) {
-            try {
-                const res = await notificationAPI.getAll();
-                setNotifications(res.data.slice(0, 10));
-            } catch { }
+            fetchNotifications(10);
         }
     };
 
-    const markAsRead = async (id) => {
-        try {
-            await notificationAPI.markRead(id);
-            setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
-            setUnreadCount(Math.max(0, unreadCount - 1));
-        } catch { }
-    };
 
     const resolveNotificationRoute = (notification) => {
         if (notification?.link) return notification.link;
