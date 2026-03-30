@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
+// const cors = require('cors'); // Moved to middleware/corsConfig.js
+
 const morgan = require('morgan');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -48,33 +49,10 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
-// Strict CORS configuration - only allow known safe origins
-const allowedOrigins = [
-  process.env.FRONTEND_URL, // Vercel production (e.g., https://uniplacements.vercel.app)
-  'http://localhost:5173',   // Local Vite dev server
-  'http://localhost:5500',   // Local dev fallback
-  'http://127.0.0.1:5173',   // localhost IPv4 variant
-].filter(Boolean); // Remove undefined values
+// Security Middlewares
+const corsMiddleware = require('./middleware/corsConfig');
+app.use(corsMiddleware);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests without origin (e.g., mobile apps, curl, Postman)
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      // Reject with descriptive error (safe for production)
-      callback(new Error('CORS policy: Origin not allowed'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
 
 // Input Sanitization - Prevent NoSQL injection attacks
 // sanitize user input data by escaping $ and . characters in object keys
