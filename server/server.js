@@ -156,6 +156,30 @@ if (process.env.NODE_ENV !== 'production' && require.main === module) {
   setupExpiryCheckInterval(60 * 60 * 1000);
 }
 
+/**
+ * Graceful Shutdown Handler
+ * Closes the database connection and stops the server cleanly.
+ */
+const gracefulShutdown = (signal) => {
+  logger.warn(`Received ${signal}. Starting graceful shutdown...`);
+  
+  // Close database connection
+  const mongoose = require('mongoose');
+  mongoose.connection.close(false, () => {
+    logger.info('MongoDB connection closed.');
+    process.exit(0);
+  });
+
+  // Force shutdown after 10 seconds if it haven't closed
+  setTimeout(() => {
+    logger.error('Could not close connections in time, forcefully shutting down.');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
 // Server start (only if not in a serverless environment like Vercel production)
 if (process.env.NODE_ENV !== 'production' || require.main === module) {
   const PORT = process.env.PORT || 5000;
