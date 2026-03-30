@@ -1,5 +1,6 @@
 const express = require('express');
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose'); // Moved to config/db.js
+
 const morgan = require('morgan');
 
 
@@ -64,28 +65,23 @@ app.use(xss({
 }));
 
 
+const connectDB = require('./config/db');
+
 /**
  * MongoDB Connection Middleware (Serverless-optimized)
- * Ensures a database connection is active before processing any requests.
+ * Guarantees a database connection is active before routing.
  */
-let isConnected = false;
 app.use(async (req, res, next) => {
-  if (isConnected || mongoose.connection.readyState === 1) {
-    isConnected = true;
-    return next();
-  }
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000
-    });
-    isConnected = true;
-    logger.info('Connected to MongoDB Atlas');
+    await connectDB();
     next();
   } catch (err) {
-    logger.error(`MongoDB connection error: ${err.message}`, { error: err });
-    return res.status(500).json({ error: `Database connection failed: ${err.message}` });
+    // If it falls through here, connectDB already handled the process.exit(1) for initial
+    // But middleware needs to handle runtime failures
+    return res.status(500).json({ error: 'Database connection failed' });
   }
 });
+
 
 
 /**
