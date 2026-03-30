@@ -120,20 +120,37 @@ const Navbar = ({ title = 'Placement Portal' }) => {
             <h2>{title}</h2>
             <div className="navbar-actions">
                 <div ref={dropdownRef} style={{ position: 'relative' }}>
-                    <button className="notification-btn" onClick={handleBellClick}>
-                        <FiBell />
-                        {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+                    <button 
+                        className="notification-btn" 
+                        onClick={handleBellClick}
+                        aria-label={`View notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+                        aria-haspopup="true"
+                        aria-expanded={showDropdown}
+                    >
+                        <FiBell aria-hidden="true" />
+                        {unreadCount > 0 && <span className="notification-badge" aria-hidden="true">{unreadCount}</span>}
                     </button>
+
                     {showDropdown && (
-                        <div className="notification-dropdown">
-                            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', fontWeight: 600, fontSize: '0.9rem' }}>
+                        <div className="notification-dropdown" role="menu">
+                            <div 
+                                style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', fontWeight: 600, fontSize: '0.9rem' }}
+                                role="presentation"
+                            >
                                 Notifications
                             </div>
                             {notifications.length === 0 ? (
-                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No notifications</div>
+                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }} role="menuitem">No notifications</div>
                             ) : (
                                 notifications.map((n) => (
-                                    <div key={n._id} className={`notification-item ${!n.isRead ? 'unread' : ''}`} onClick={() => handleNotificationClick(n)}>
+                                    <div 
+                                        key={n._id} 
+                                        className={`notification-item ${!n.isRead ? 'unread' : ''}`} 
+                                        onClick={() => handleNotificationClick(n)}
+                                        role="menuitem"
+                                        tabIndex="0"
+                                        onKeyDown={(e) => e.key === 'Enter' && handleNotificationClick(n)}
+                                    >
                                         <h4>{n.title}</h4>
                                         <p>{n.message}</p>
                                         <div className="time">{timeAgo(n.createdAt)}</div>
@@ -142,11 +159,21 @@ const Navbar = ({ title = 'Placement Portal' }) => {
                             )}
                         </div>
                     )}
+
                 </div>
-                <div className="user-menu clickable-profile" onClick={handleProfileClick} title="View Profile">
-                    <div className="user-avatar">{user?.name?.[0]?.toUpperCase()}</div>
+                <div 
+                    className="user-menu clickable-profile" 
+                    onClick={handleProfileClick} 
+                    title="View Profile"
+                    role="button"
+                    aria-label={`User profile: ${user?.name}`}
+                    tabIndex="0"
+                    onKeyDown={(e) => e.key === 'Enter' && handleProfileClick()}
+                >
+                    <div className="user-avatar" aria-hidden="true">{user?.name?.[0]?.toUpperCase()}</div>
                     <span className="user-name">{user?.name}</span>
                 </div>
+
             </div>
         </div>
     );
