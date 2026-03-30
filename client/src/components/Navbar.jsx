@@ -4,7 +4,16 @@ import { useAuth } from '../context/AuthContext';
 import { notificationAPI } from '../services/api';
 import { FiBell } from 'react-icons/fi';
 
-const Navbar = ({ title }) => {
+/**
+ * Navbar Component
+ * Displays the page title, notification center, and user profile information.
+ * 
+ * @param {Object} props - Component props
+ * @param {string} [props.title='Placement Portal'] - The title to display in the navbar
+ */
+const Navbar = ({ title = 'Placement Portal' }) => {
+
+
     const { user } = useAuth();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
