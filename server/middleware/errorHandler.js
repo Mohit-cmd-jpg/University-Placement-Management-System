@@ -11,17 +11,19 @@ const errorHandler = (err, req, res, next) => {
   // Log full error server-side for debugging
   logger.error(`[${errorId}] Error: ${err.message}`, { error: err, errorId });
 
-  
   // Default status code
   const statusCode = err.statusCode || err.status || 500;
   
-  // Build consistent error response
+  /**
+   * @type {Object} errorResponse - Standardized error response object sent to the client
+   */
   const errorResponse = {
     success: false,
     message: 'An error occurred processing your request',
     status: statusCode,
     errorId: errorId
   };
+
 
   // Safe error message mapping based on error type or status
   if (err.name === 'ValidationError') {
