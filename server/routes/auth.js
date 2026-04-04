@@ -11,7 +11,7 @@ const { validateSchema } = require('../utils/validationSchemas');
 const { authSchemas } = require('../utils/validationSchemas');
 const { createApiSecurityMiddleware, securityProfiles } = require('../middleware/apiSecurity');
 const { validatePasswordStrength } = require('../utils/passwordValidator');
-// Import concurrency helpers for distributed session management
+// PHASE 2: Import concurrency utilities for distributed state management
 const { 
     recordFailedLoginAttempt, 
     recordSuccessfulLogin, 
@@ -24,8 +24,8 @@ const getAdminContactEmail = () => {
     return process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'admin@university.edu';
 };
 
-// Initiate OTP flow for new user registration
-// Password strength is enforced before proceeding
+// Phase 1: Request OTP for Signup - with strict API security
+// PHASE 2: Enforce strong password rules for NEW registrations
 router.post('/register-otp', [
     ...createApiSecurityMiddleware(securityProfiles.auth),
     otpRequestLimiter,

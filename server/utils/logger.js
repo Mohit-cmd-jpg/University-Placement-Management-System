@@ -1,5 +1,5 @@
 /**
- * Logger utility for the University Placement System.
+ * Standard Logger utility for the University Placement System.
  * Provides a standardized way to log messages with different severity levels.
  * Can be easily integrated with external logging services in the future.
  */

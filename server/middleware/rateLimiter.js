@@ -1,6 +1,6 @@
 const rateLimit = require('express-rate-limit');
 
-// Limit OTP requests to 3 per minute per IP/email to prevent spam
+// Max 3 OTP requests per minute from a single IP/email
 const otpRequestLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 3,
@@ -18,9 +18,9 @@ const otpVerifyLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Strict login rate limiting to defend against brute-force attacks
-// Allows a maximum of 5 login attempts within any 5-minute window per IP
-// Temporary lockout is applied on threshold breach
+// PHASE 3 HARDENING: Strict Login Rate Limiting
+// Max 5 login attempts per 5 minutes from a single IP
+// This prevents brute force attacks on credentials
 const loginLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minute window
     max: 5, // 5 attempts per window
@@ -33,8 +33,8 @@ const loginLimiter = rateLimit({
     skipSuccessfulRequests: false, // Count even successful logins
     skipFailedRequests: false, // Count failed attempts too
     handler: (req, res) => {
-        // Emit a security warning for elevated monitoring
-        console.warn(`[SECURITY] Excessive login attempts detected from IP: ${req.ip}`);
+        // Log potential brute force attack
+        console.warn(`[SECURITY] Brute force login attempt detected from IP: ${req.ip}`);
         res.status(429).json({ 
             error: 'Too many login attempts. Please try again in 5 minutes.',
             retryAfter: Math.ceil(req.rateLimit.resetTime / 1000),
@@ -43,8 +43,8 @@ const loginLimiter = rateLimit({
     }
 });
 
-// In-memory tracker for failed login attempts, keyed by email
-// Note: For distributed/production deployments, replace with Redis
+// Failed Login Tracking per Username/Email
+// Stores failed login attempts in-memory (in production, use Redis)
 const failedLoginAttempts = new Map();
 
 /**
