@@ -23,6 +23,64 @@ const AIMockInterview = () => {
     // For voice input (Web Speech API)
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef(null);
+    const silenceTimerRef = useRef(null);
+    const userInputRef = useRef(userInput);
+    
+    // To sync state and refs inside event listeners
+    useEffect(() => {
+        userInputRef.current = userInput;
+    }, [userInput]);
+
+    // Load better voices
+    const [voices, setVoices] = useState([]);
+    useEffect(() => {
+        const loadVoices = () => {
+            setVoices(window.speechSynthesis.getVoices());
+        };
+        loadVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+             window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+    }, []);
+
+    // Function to submit chat dynamically
+    const submitChat = async (textToSubmit) => {
+        // Stop listening if active
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            setIsListening(false);
+        }
+        
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+
+        if (!textToSubmit.trim()) {
+            textToSubmit = "(Candidate did not provide a response)";
+        }
+
+        stopSpeaking();
+        const newMessage = { role: 'user', content: textToSubmit };
+        const updatedChat = [...chatHistory, newMessage];
+        setChatHistory(updatedChat);
+        setUserInput('');
+        setIsLoading(true);
+
+        try {
+            const res = await api.post('/preparation/mock-interview/chat', {
+                candidateProfile,
+                jobRole,
+                questionType,
+                chatHistory: updatedChat
+            });
+            
+            const reply = res.data.reply;
+            setChatHistory([...updatedChat, { role: 'assistant', content: reply }]);
+            speakText(reply);
+        } catch (err) {
+            toast.error('Failed to send message.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
         // Initialize Speech Recognition
@@ -39,6 +97,12 @@ const AIMockInterview = () => {
                     currentTranscript += event.results[i][0].transcript;
                 }
                 setUserInput(currentTranscript);
+                
+                // Clear and reset the 10-second silence timer because user is speaking
+                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = setTimeout(() => {
+                     submitChat(userInputRef.current);
+                }, 10000); 
             };
 
             recognition.onerror = (event) => {
@@ -57,13 +121,15 @@ const AIMockInterview = () => {
             if (recognitionRef.current) {
                 recognitionRef.current.stop();
             }
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         };
-    }, []);
+    }, [chatHistory]); // depend on chatHistory so submitChat uses latest state
 
     const toggleListening = () => {
         if (isListening) {
             recognitionRef.current?.stop();
             setIsListening(false);
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         } else {
             if (!recognitionRef.current) {
                 toast.error('Your browser does not support Voice Recognition.');
@@ -72,6 +138,12 @@ const AIMockInterview = () => {
             setUserInput('');
             recognitionRef.current.start();
             setIsListening(true);
+            
+            // Start the initial 10-second timer
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = setTimeout(() => {
+                 submitChat("");
+            }, 10000);
         }
     };
 
@@ -85,8 +157,24 @@ const AIMockInterview = () => {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel(); // Stop any current speech
         const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Find best English professional voice
+        if (voices.length > 0) {
+            const desiredVoice = voices.find(v => v.name.includes("Google US English") || v.name.includes("Zira") || v.lang === "en-US");
+            if (desiredVoice) utterance.voice = desiredVoice;
+        }
+        
+        utterance.rate = 1.0;
+        utterance.pitch = 1.05;
+
         utterance.onstart = () => setIsSpeaking(true);
-        utterance.onend = () => setIsSpeaking(false);
+        utterance.onend = () => {
+            setIsSpeaking(false);
+            // Once AI finishes speaking, auto-start mic (if un-muted logic allows)
+            setTimeout(() => {
+                 toggleListening();
+            }, 500);
+        };
         window.speechSynthesis.speak(utterance);
     };
 
@@ -103,6 +191,15 @@ const AIMockInterview = () => {
 
     const startInterview = async (e) => {
         e.preventDefault();
+
+        try {
+            // Request Mic permission immediately
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch(err) {
+            toast.error('Microphone access is required for the AI Mock Interview.');
+            return;
+        }
+
         setIsLoading(true);
         const formData = new FormData();
         formData.append('jobRole', jobRole);
