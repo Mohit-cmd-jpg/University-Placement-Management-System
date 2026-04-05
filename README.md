@@ -97,11 +97,7 @@
   - **Structured DSA Roadmap**: A curated 8-week guide for coding excellence.
   - **Practice Portals**: Topic-wise coding challenges and theoretical concepts.
   - **AI Mock Tests**: Timed assessments with instant feedback.
-  - **AI Interview Prep + Evaluation**: Role-based questions, detailed feedback, model answers, and improvement tips.
-  - **Skip-to-Next Interview Question Flow**: Move to the next prompt when you want to pass a question.
-  - **AI Career Mentor Roadmap**: Role-focused multi-phase preparation plans.
-
-### For Recruiters 🏢
+    - **AI Mock Interviews**: Immersive full-screen voice/chat interviews featuring strict adaptive scoring, customized questions strictly derived from your uploaded resume, and real-time feedback.
 - **💼 Job Lifecycle Management**: Post roles, define eligibility, and track applications.
 - **📄 Applicant Tracking System (ATS)**: Streamlined student profile reviews and resume management.
 - **⚡ Status Management**: Instant Shortlist/Reject/Select actions for candidates.
