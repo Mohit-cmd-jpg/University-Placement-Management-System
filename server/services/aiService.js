@@ -1243,18 +1243,19 @@ const generateInterviewReply = async (candidateProfile, jobRole, questionType, c
 
 Session ID: ${sessionSeed} — Use this to ensure you NEVER repeat questions from any prior session.
 
-Candidate background: ${JSON.stringify(candidateProfile)}.
+Candidate background (parsed from their resume):
+${JSON.stringify(candidateProfile, null, 2)}
 
 Difficulty guidance: ${difficultyGuide[difficulty] || difficultyGuide['Medium']}
 
 INTERVIEW PROGRESS: Question ${currentQuestionNum} of ${questionCount}.
 ${isLastQuestion ? 'This is the FINAL question. After their answer, wrap up the interview professionally.' : ''}
 
-RULES:
+CRITICAL RULES:
 - Ask exactly ONE concise question at a time.
-- ${isFirstMessage ? 'Introduce yourself briefly as Sarah Chen, mention the role and focus, then ask the first question based on their background.' : 'Briefly acknowledge their previous answer (1 short sentence), then ask the next question.'}
+- RESUME INTEGRATION: You MUST base your questions heavily on the "Candidate background" provided above. Ask about their specific projects, the technologies they listed, or their past experience. Do NOT just ask generic ${jobRole} questions if they provided a background.
+- ${isFirstMessage ? 'Since this is the first message, introduce yourself briefly, mention you reviewed their resume, and ask the first question SPECIFICALLY about a project, skill, or experience from their background.' : 'Briefly acknowledge their previous answer (1 short sentence), then ask the NEXT question, continuing to weave their background into the scenario.'}
 - Vary question topics: do NOT ask about the same concept twice.
-- Tailor questions to their resume skills and the job role.
 - Keep responses conversational and natural — this will be read aloud by text-to-speech.
 - NEVER use markdown formatting (no asterisks, bold, bullet points). Use plain spoken English only.
 - Do NOT reveal correct answers or give hints.`;

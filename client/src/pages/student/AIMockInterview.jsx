@@ -280,7 +280,17 @@ const AIMockInterview = () => {
 
     // ─── Actions ───
     const startInterview = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
+
+        // 1. MUST go fullscreen instantly to avoid the browser blocking it
+        try {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(err => console.warn('Fullscreen failed:', err));
+            }
+        } catch (err) {
+            console.warn('Fullscreen request failed:', err);
+        }
+
         try { await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { toast.error('Microphone access required.'); return; }
         setIsLoading(true);
         const formData = new FormData();
@@ -293,15 +303,6 @@ const AIMockInterview = () => {
             setChatHistory([{ role: 'assistant', content: res.data.initialReply }]);
             autoEndTriggeredRef.current = false;
             isInterviewActiveRef.current = true; setStep('interview'); setInterviewTime(0);
-            
-            // Try to go fullscreen
-            try {
-                if (document.documentElement.requestFullscreen) {
-                    await document.documentElement.requestFullscreen();
-                }
-            } catch (err) {
-                console.warn('Fullscreen request failed:', err);
-            }
 
             speakText(res.data.initialReply);
         } catch (err) { toast.error(err.response?.data?.error || 'Failed to start.'); }
