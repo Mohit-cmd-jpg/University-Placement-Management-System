@@ -24,12 +24,28 @@ const AIMockInterview = () => {
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef(null);
     const silenceTimerRef = useRef(null);
+    const speakingTimeoutRef = useRef(null);
+    const isInterviewActiveRef = useRef(false);
     const userInputRef = useRef(userInput);
     
     // To sync state and refs inside event listeners
     useEffect(() => {
         userInputRef.current = userInput;
     }, [userInput]);
+
+    useEffect(() => {
+        return () => {
+            isInterviewActiveRef.current = false;
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            if (speakingTimeoutRef.current) clearTimeout(speakingTimeoutRef.current);
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+            if (recognitionRef.current) {
+                try {
+                    recognitionRef.current.stop();
+                } catch(e) {}
+            }
+        };
+    }, []);
 
     // Load better voices
     const [voices, setVoices] = useState([]);
@@ -45,6 +61,8 @@ const AIMockInterview = () => {
 
     // Function to submit chat dynamically
     const submitChat = async (textToSubmit) => {
+        if (!isInterviewActiveRef.current) return;
+        
         // Stop listening if active
         if (recognitionRef.current) {
             recognitionRef.current.stop();
@@ -170,9 +188,10 @@ const AIMockInterview = () => {
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => {
             setIsSpeaking(false);
+            if (!isInterviewActiveRef.current) return;
             // Once AI finishes speaking, auto-start mic (if un-muted logic allows)
-            setTimeout(() => {
-                 toggleListening();
+            speakingTimeoutRef.current = setTimeout(() => {
+                 if (isInterviewActiveRef.current) toggleListening();
             }, 500);
         };
         window.speechSynthesis.speak(utterance);
@@ -183,6 +202,7 @@ const AIMockInterview = () => {
             window.speechSynthesis.cancel();
             setIsSpeaking(false);
         }
+        if (speakingTimeoutRef.current) clearTimeout(speakingTimeoutRef.current);
     };
 
     const handleFileChange = (e) => {
@@ -215,6 +235,7 @@ const AIMockInterview = () => {
             const firstReply = res.data.initialReply;
             setCandidateProfile(res.data.candidateProfile);
             setChatHistory([{ role: 'assistant', content: firstReply }]);
+            isInterviewActiveRef.current = true;
             setStep('interview');
             speakText(firstReply);
         } catch (err) {
@@ -226,7 +247,8 @@ const AIMockInterview = () => {
 
     const sendMessage = async (e) => {
         e?.preventDefault();
-        
+        if (!isInterviewActiveRef.current) return;
+
         // Stop listening if active
         if (isListening && recognitionRef.current) {
             recognitionRef.current.stop();
@@ -261,7 +283,13 @@ const AIMockInterview = () => {
     };
 
     const endInterview = async () => {
+        isInterviewActiveRef.current = false;
         stopSpeaking();
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+        setIsListening(false);
         setIsLoading(true);
         try {
             const res = await api.post('/preparation/mock-interview/evaluate', {

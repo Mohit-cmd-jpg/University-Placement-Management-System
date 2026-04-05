@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiHome, FiUser, FiBriefcase, FiFileText, FiBook, FiUsers, FiCheckSquare, FiBarChart2, FiCalendar, FiBell, FiLogOut, FiCode, FiHelpCircle, FiEdit, FiClipboard, FiX, FiSettings } from 'react-icons/fi';
+import { FiHome, FiUser, FiBriefcase, FiFileText, FiBook, FiUsers, FiCheckSquare, FiBarChart2, FiCalendar, FiBell, FiLogOut, FiCode, FiHelpCircle, FiEdit, FiClipboard, FiX, FiSettings, FiCpu } from 'react-icons/fi';
 
 const Sidebar = ({ isOpen, onClose }) => {
     const { user, logout } = useAuth();
@@ -83,6 +83,9 @@ const Sidebar = ({ isOpen, onClose }) => {
                         <div className="sidebar-section-title">Prep Resources</div>
                         <Link to="/student/preparation/mock-test" className={isActive('/student/preparation/mock-test')} onClick={handleLinkClick}>
                             <FiCheckSquare /> <span>Mock Tests</span>
+                        </Link>
+                        <Link to="/student/preparation/ai-mock" className={isActive('/student/preparation/ai-mock')} onClick={handleLinkClick}>
+                            <FiCpu /> <span>AI Mock Interview</span>
                         </Link>
                         <Link to="/student/preparation/tips" className={isActive('/student/preparation/tips')} onClick={handleLinkClick}>
                             <FiHelpCircle /> <span>Interview Prep</span>
