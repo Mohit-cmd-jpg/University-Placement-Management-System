@@ -80,6 +80,22 @@ const AIAvatar = ({ isSpeaking }) => (
 );
 
 const AIMockInterview = () => {
+    // Job roles with tech and management options
+    const jobRoles = [
+        'Software Engineer',
+        'Frontend Developer',
+        'Backend Developer',
+        'Full Stack Developer',
+        'Data Scientist',
+        'AI/ML Engineer',
+        'DevOps Engineer',
+        'Product Manager',
+        'Engineering Manager',
+        'Technical Lead',
+        'Solutions Architect',
+        'QA Engineer'
+    ];
+
     const [step, setStep] = useState('setup');
     const [jobRole, setJobRole] = useState('Software Engineer');
     const [questionType, setQuestionType] = useState('technical');
@@ -319,7 +335,7 @@ const AIMockInterview = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div>
                                     <label style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '2px', display: 'block', marginBottom: '0.5rem' }}>Target Role</label>
-                                    <input type="text" value={jobRole} onChange={e => setJobRole(e.target.value)} required placeholder="e.g. Software Engineer"
+                                    <select value={jobRole} onChange={e => setJobRole(e.target.value)} required
                                         style={{
                                             width: '100%',
                                             padding: '0.9rem 1.25rem',
@@ -330,8 +346,18 @@ const AIMockInterview = () => {
                                             background: 'var(--bg-card)',
                                             color: 'var(--text-primary)',
                                             cursor: 'pointer',
-                                            boxShadow: 'var(--shadow-sm)'
-                                        }} />
+                                            boxShadow: 'var(--shadow-sm)',
+                                            appearance: 'none',
+                                            backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%27none%27 stroke=%27%23666%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e")',
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundPosition: 'right 1rem center',
+                                            backgroundSize: '1.25rem',
+                                            paddingRight: '3rem'
+                                        }}>
+                                        {jobRoles.map(role => (
+                                            <option key={role} value={role}>{role}</option>
+                                        ))}
+                                    </select>
                                 </div>
                                 <div>
                                     <label style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '2px', display: 'block', marginBottom: '0.5rem' }}>Difficulty</label>
