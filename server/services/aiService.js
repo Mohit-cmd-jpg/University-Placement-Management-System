@@ -1285,6 +1285,31 @@ const analyzeInterviewPerformance = async (jobRole, questionType, chatHistory, d
             }
         }
 
+        const userMessages = chatHistory.filter(m => m.role === 'user');
+        const meaningfulAnswers = userMessages.filter(m => m.content.trim().length > 3);
+
+        // If the user provided no answers or only extremely short/empty responses
+        if (userMessages.length === 0 || meaningfulAnswers.length === 0) {
+            return {
+                score: 0,
+                criteria: {
+                    technicalAccuracy: { score: 0, feedback: 'No substantial answers provided to evaluate technical accuracy.' },
+                    communicationClarity: { score: 0, feedback: 'No substantial answers provided to evaluate communication ability.' },
+                    problemSolving: { score: 0, feedback: 'No substantial answers provided to evaluate problem solving.' },
+                    confidenceDelivery: { score: 0, feedback: 'No substantial answers provided to evaluate delivery.' },
+                    roleRelevance: { score: 0, feedback: 'No substantial answers provided to evaluate role relevance.' }
+                },
+                perQuestion: qaPairs.map(qa => ({
+                    question: qa.question,
+                    score: 0,
+                    feedback: 'No answer provided.'
+                })),
+                feedback: 'The interview was concluded without providing meaningful answers. Please try again and complete the interview to receive a full AI evaluation.',
+                strengths: ['Initiated the interview process'],
+                improvements: ['Provide complete answers to the questions', 'Ensure your microphone is picking up your voice clearly']
+            };
+        }
+
         const transcriptText = chatHistory.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
 
         const prompt = `You are an elite interview performance evaluator. Analyze this ${jobRole} interview (${questionType} focus, ${difficulty} difficulty).
@@ -1292,38 +1317,38 @@ const analyzeInterviewPerformance = async (jobRole, questionType, chatHistory, d
 SCORING RUBRIC — 5 criteria, each scored 0-20:
 
 1. TECHNICAL ACCURACY (0-20): Correctness of answers, depth of knowledge, understanding of concepts.
-   - 0-5: Mostly incorrect or irrelevant answers
+   - 0-5: Mostly incorrect, irrelevant, or excessively brief answers ("I don't know", etc.)
    - 6-10: Basic understanding but significant gaps
    - 11-15: Good knowledge with minor errors
    - 16-20: Expert-level, precise answers
 
 2. COMMUNICATION CLARITY (0-20): How clearly and concisely they express ideas.
-   - 0-5: Incoherent or very unclear
+   - 0-5: Incoherent, empty, or very unclear
    - 6-10: Understandable but rambling or disorganized
    - 11-15: Clear and structured
    - 16-20: Exceptionally articulate and concise
 
 3. PROBLEM SOLVING (0-20): Approach to breaking down problems, analytical thinking.
-   - 0-5: No structured approach
+   - 0-5: No structured approach or skipped questions
    - 6-10: Some attempt at structure but incomplete
    - 11-15: Good systematic approach
    - 16-20: Excellent methodology, considers edge cases
 
 4. CONFIDENCE & DELIVERY (0-20): Professionalism, composure, and conviction.
-   - 0-5: Very hesitant, unsure
+   - 0-5: Very hesitant, unsure, or no response
    - 6-10: Somewhat confident but inconsistent
    - 11-15: Generally confident and professional
    - 16-20: Highly poised and commanding
 
 5. ROLE RELEVANCE (0-20): How well answers align with the specific ${jobRole} role requirements.
-   - 0-5: Answers unrelated to role
+   - 0-5: Answers unrelated, skipped, or blank
    - 6-10: Tangentially related
    - 11-15: Good alignment with role needs
    - 16-20: Perfect alignment, demonstrates role-specific expertise
 
-CALIBRATION: Most candidates score 35-65 overall. Only truly exceptional performances exceed 80. Be strict but fair.
-
-If the candidate gave blank or "did not respond" answers, score those questions at 0-2.
+CRITICAL SCORING RULE: 
+- If the candidate gave blank, "did not respond", or very short unhelpful answers (e.g., "I don't know", "skip", "pass"), you MUST score those specific questions severely (0-2 out of 20 for ALL criteria). Do NOT give average scores for skipped questions. Overall score should be appropriately low (can be single digits or 0) if performance was poor.
+- Most candidates score 35-65 overall. Only truly exceptional performances exceed 80. Be strict but fair.
 
 INTERVIEW TRANSCRIPT:
 ${transcriptText}
