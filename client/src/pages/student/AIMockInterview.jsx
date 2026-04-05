@@ -3,6 +3,7 @@ import Layout from '../../components/Layout';
 import api from '../../services/api';
 import { FiMic, FiSend, FiSquare, FiCheckCircle, FiUpload, FiClock, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 // ─── Animated Score Ring ───
 const ScoreRing = ({ score, max = 100, size = 160, strokeWidth = 10, color }) => {
