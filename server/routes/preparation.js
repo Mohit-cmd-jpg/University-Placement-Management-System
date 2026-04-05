@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/temp/' });
+const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 const { auth } = require('../middleware/auth');
 const InterviewQuestion = require('../models/InterviewQuestion');
@@ -388,11 +388,10 @@ router.post('/mock-interview/start', auth, upload.single('resume'), async (req, 
         let candidateProfile = { skills: [], experience: [], projects: [], summary: "Student" };
         
         if (req.file) {
-            // Parse the uploaded PDF with GitHub Models
-            const pdfBuffer = fs.readFileSync(req.file.path);
+            // Parse the uploaded PDF with GitHub Models directly from memory buffer
+            const pdfBuffer = req.file.buffer;
             candidateProfile = await extractResumeForInterview(pdfBuffer);
-            // Cleanup temp file
-            fs.unlinkSync(req.file.path);
+            // No cleanup needed for memory storage
         }
         
         // Generate the very first introductory AI message
@@ -404,7 +403,7 @@ router.post('/mock-interview/start', auth, upload.single('resume'), async (req, 
         });
     } catch (err) {
         console.error('[Mock Interview Start Error]:', err);
-        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        // No file to unlink since it's in memory
         res.status(500).json({ error: 'Failed to start interview. ' + err.message });
     }
 });
