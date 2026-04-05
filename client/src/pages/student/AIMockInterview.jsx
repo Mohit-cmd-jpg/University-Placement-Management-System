@@ -160,9 +160,17 @@ const AIMockInterview = () => {
     useEffect(() => {
         if (step === 'interview' && questionsAsked >= questionCount && isInterviewActiveRef.current && !autoEndTriggeredRef.current) {
             autoEndTriggeredRef.current = true;
-            setTimeout(() => endInterview(), 2000);
+            // Will be handled by endInterview when called from UI or in this timeout
+            const timer = setTimeout(() => {
+                if (isInterviewActiveRef.current) {
+                    // Signal to end interview by setting a flag that the endInterview button handler can check
+                    // For now, just silently end it
+                    document.querySelector('[data-interview-end-button]')?.click();
+                }
+            }, 1500);
+            return () => clearTimeout(timer);
         }
-    }, [questionsAsked, questionCount, step, endInterview]);
+    }, [questionsAsked, questionCount, step]);
 
     // ─── Speech ───
     const speakText = useCallback((text) => {
@@ -527,7 +535,7 @@ const AIMockInterview = () => {
                             <span className="text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200">
                                 Q{questionsAsked}/{questionCount}
                             </span>
-                            <button onClick={endInterview} className="text-sm font-semibold border border-red-300 hover:bg-red-50 hover:border-red-400 px-4 py-1.5 rounded-lg text-red-600 flex items-center gap-2 transition-all">
+                            <button onClick={endInterview} data-interview-end-button className="text-sm font-semibold border border-red-300 hover:bg-red-50 hover:border-red-400 px-4 py-1.5 rounded-lg text-red-600 flex items-center gap-2 transition-all">
                                 <FiSquare className="w-3.5 h-3.5" /> End Session
                             </button>
                         </div>
