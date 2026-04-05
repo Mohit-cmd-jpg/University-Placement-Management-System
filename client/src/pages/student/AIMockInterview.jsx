@@ -3,7 +3,6 @@ import Layout from '../../components/Layout';
 import api from '../../services/api';
 import { FiMic, FiSend, FiSquare, FiCheckCircle, FiUpload, FiClock, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Animated Score Ring ───
 const ScoreRing = ({ score, max = 100, size = 160, strokeWidth = 10, color }) => {
@@ -51,18 +50,25 @@ const CriteriaBar = ({ label, score, max = 20, feedback }) => {
     );
 };
 
-// ─── Audio Waveform Visualizer ───
-const WaveformVisualizer = ({ isActive, color = '#2563eb' }) => (
+// ─── Waveform Visualizer with memoized random heights ───
+const WaveformVisualizer = ({ isActive, color = '#3b82f6' }) => {
+    // Generate random heights once and memoize them
+    const [heights] = useState(() => 
+        Array.from({ length: 12 }, () => 12 + Math.random() * 20)
+    );
+    
+    return (
     <div className="flex items-center gap-[3px] h-8">
-        {[...Array(12)].map((_, i) => (
+        {heights.map((height, i) => (
             <div key={i} className="w-[3px] rounded-full transition-all duration-150" style={{
                 backgroundColor: color, opacity: isActive ? 0.8 : 0.3,
-                height: isActive ? `${12 + Math.random() * 20}px` : '6px',
+                height: isActive ? `${height}px` : '6px',
                 animation: isActive ? `waveform 0.4s ease-in-out ${i * 0.05}s infinite alternate` : 'none',
             }} />
         ))}
     </div>
 );
+};
 
 // ─── AI Avatar ───
 const AIAvatar = ({ isSpeaking }) => (
@@ -110,8 +116,6 @@ const AIMockInterview = () => {
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [interviewTime, setInterviewTime] = useState(0);
-    const [showTranscript, setShowTranscript] = useState(false);
-    const [expandedQ, setExpandedQ] = useState(null);
     const chatEndRef = useRef(null);
     const recognitionRef = useRef(null);
     const silenceTimerRef = useRef(null);
@@ -130,7 +134,11 @@ const AIMockInterview = () => {
             isInterviewActiveRef.current = false;
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             [speakingTimeoutRef, silenceTimerRef, timerRef].forEach(r => r.current && clearTimeout(r.current));
-            if (recognitionRef.current) try { recognitionRef.current.stop(); } catch(e) {}
+            if (recognitionRef.current) {
+                try { recognitionRef.current.stop(); } catch {
+                    // Ignore errors when stopping recognition
+                }
+            }
             if (timerRef.current) clearInterval(timerRef.current);
         };
     }, []);
@@ -154,25 +162,7 @@ const AIMockInterview = () => {
 
     const formatTime = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 
-    const questionsAsked = chatHistory.filter(m => m.role === 'assistant').length;
-
-    // Auto-end interview when question count reached
-    useEffect(() => {
-        if (step === 'interview' && questionsAsked >= questionCount && isInterviewActiveRef.current && !autoEndTriggeredRef.current) {
-            autoEndTriggeredRef.current = true;
-            // Will be handled by endInterview when called from UI or in this timeout
-            const timer = setTimeout(() => {
-                if (isInterviewActiveRef.current) {
-                    // Signal to end interview by setting a flag that the endInterview button handler can check
-                    // For now, just silently end it
-                    document.querySelector('[data-interview-end-button]')?.click();
-                }
-            }, 1500);
-            return () => clearTimeout(timer);
-        }
-    }, [questionsAsked, questionCount, step]);
-
-    // ─── Speech ───
+    const questionsAsked = chatHistory.filter(m => m.role === 'assistant' && !m.isWrapUp).length;
     const speakText = useCallback((text) => {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
@@ -186,10 +176,16 @@ const AIMockInterview = () => {
         utterance.onend = () => {
             setIsSpeaking(false);
             if (!isInterviewActiveRef.current) return;
-            speakingTimeoutRef.current = setTimeout(() => { if (isInterviewActiveRef.current) toggleListening(); }, 500);
+            // Schedule automatic listening after AI finishes speaking
+            speakingTimeoutRef.current = setTimeout(() => { 
+                if (isInterviewActiveRef.current && isListening === false) {
+                    setIsListening(true);
+                    if (recognitionRef.current) recognitionRef.current.start();
+                }
+            }, 500);
         };
         window.speechSynthesis.speak(utterance);
-    }, [voices]);
+    }, [voices, isListening]);
 
     const stopSpeaking = () => {
         if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
@@ -214,7 +210,10 @@ const AIMockInterview = () => {
             });
             setChatHistory([...updatedChat, { role: 'assistant', content: res.data.reply }]);
             speakText(res.data.reply);
-        } catch (err) { toast.error('Failed to send message.'); }
+        } catch (err) { 
+            console.error('Failed to send message', err);
+            toast.error('Failed to send message.'); 
+        }
         finally { setIsLoading(false); }
     }, [chatHistory, candidateProfile, jobRole, questionType, difficulty, questionCount, speakText]);
 
@@ -281,13 +280,33 @@ const AIMockInterview = () => {
         if (isListening && recognitionRef.current) { recognitionRef.current.stop(); setIsListening(false); }
         stopSpeaking();
         const updatedChat = [...chatHistory, { role: 'user', content: userInput }];
+        const newUserAnswerCount = updatedChat.filter(m => m.role === 'user').length;
         setChatHistory(updatedChat); setUserInput(''); setIsLoading(true);
         try {
-            const res = await api.post('/preparation/mock-interview/chat', {
-                candidateProfile, jobRole, questionType, chatHistory: updatedChat, difficulty, questionCount
-            });
-            setChatHistory([...updatedChat, { role: 'assistant', content: res.data.reply }]);
-            speakText(res.data.reply);
+            // Check if user just answered the final question
+            if (newUserAnswerCount >= questionCount) {
+                // Send wrap-up message
+                const wrapUpMessage = {
+                    role: 'assistant',
+                    content: "Thank you for completing this interview! You've demonstrated great effort and answered all the questions thoughtfully. Your interview has been recorded and will be evaluated shortly. This session will end now, and you'll see your detailed performance report.",
+                    isWrapUp: true
+                };
+                setChatHistory([...updatedChat, wrapUpMessage]);
+                speakText(wrapUpMessage.content);
+                // Auto-evaluate after a short delay
+                setTimeout(() => {
+                    if (isInterviewActiveRef.current) {
+                        endInterview();
+                    }
+                }, 3000);
+            } else {
+                // Continue with next question
+                const res = await api.post('/preparation/mock-interview/chat', {
+                    candidateProfile, jobRole, questionType, chatHistory: updatedChat, difficulty, questionCount
+                });
+                setChatHistory([...updatedChat, { role: 'assistant', content: res.data.reply }]);
+                speakText(res.data.reply);
+            }
         } catch { toast.error('Failed to send message.'); }
         finally { setIsLoading(false); }
     };
@@ -313,15 +332,252 @@ const AIMockInterview = () => {
     };
 
     // ─── RENDER ───
+    // Conditional rendering: Layout only for setup, plain fullscreen for interview/evaluation
+    if (step === 'interview' || step === 'evaluation') {
+        return (
+            <>
+                <style>{`
+                    @keyframes waveform { from { transform: scaleY(0.4); } to { transform: scaleY(1); } }
+                    body { overflow: hidden; }
+                `}</style>
+                
+                {/* ═══ INTERVIEW ═══ */}
+                {step === 'interview' && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100vh', zIndex: 9999, background: 'white', display: 'flex', flexDirection: 'column', margin: 0, padding: 0, overflow: 'hidden' }}>
+                        {/* Top bar */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shadow-sm">
+                            <div className="flex items-center gap-4">
+                                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}
+                                    className="w-3 h-3 rounded-full bg-emerald-500 shadow-lg" />
+                                <span className="text-gray-900 font-bold tracking-wide">Live Interview</span>
+                                <span className="text-gray-400">•</span>
+                                <span className="text-gray-600 font-medium">{jobRole} • {questionType}</span>
+                            </div>
+                            <div className="flex items-center gap-5">
+                                <div className="flex items-center gap-2 text-gray-700 text-sm font-mono bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
+                                    <FiClock className="w-4 h-4 text-blue-600" />
+                                    {formatTime(interviewTime)}
+                                </div>
+                                <span className="text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200">
+                                    Q{questionsAsked}/{questionCount}
+                                </span>
+                                <button onClick={endInterview} data-interview-end-button className="text-sm font-semibold border border-red-300 hover:bg-red-50 hover:border-red-400 px-4 py-1.5 rounded-lg text-red-600 flex items-center gap-2 transition-all">
+                                    <FiSquare className="w-3.5 h-3.5" /> End Session
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Main area */}
+                        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                            {/* AI Panel */}
+                            <div className="lg:w-1/3 flex flex-col items-center justify-center p-8 border-b lg:border-b-0 lg:border-r border-gray-200 bg-gradient-to-b from-blue-50 to-white">
+                                <AIAvatar isSpeaking={isSpeaking} />
+                                <h3 className="text-gray-900 font-bold text-xl mt-5">Sarah Chen</h3>
+                                <p className="text-gray-600 text-sm font-medium">Senior AI Interviewer</p>
+                                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mt-5 glass-card rounded-xl px-5 py-3">
+                                    <span className={`text-sm font-semibold transition-colors ${isSpeaking ? 'text-blue-600' : isLoading ? 'text-amber-600' : 'text-green-600'}`}>
+                                        {isSpeaking ? '🎙️ Speaking...' : isLoading ? '🤔 Thinking...' : '👂 Listening'}
+                                    </span>
+                                </motion.div>
+                            </div>
+
+                            {/* Chat / Transcript */}
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white' }}>
+                                <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {chatHistory.map((msg, idx) => (
+                                        <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[80%] p-4 rounded-2xl transition-all ${msg.role === 'assistant'
+                                                ? 'glass-card text-gray-800 rounded-tl-sm shadow-sm border border-blue-100' : 'bg-blue-600 text-white rounded-tr-sm shadow-md'}`}>
+                                                <span className="text-[10px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: msg.role === 'assistant' ? '#2563eb' : 'white' }}>
+                                                    {msg.role === 'assistant' ? '🤖 Sarah' : '👤 You'}
+                                                </span>
+                                                <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.content}</p>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                    {isLoading && (
+                                        <div className="flex justify-start"><div className="glass-card p-4 rounded-2xl rounded-tl-sm flex items-center gap-3 shadow-sm border border-blue-100">
+                                            <span className="text-[10px] font-bold text-blue-600 uppercase">Sarah</span>
+                                            <span className="flex gap-1.5">{[0,1,2].map(i => <motion.span key={i} className="w-2 h-2 bg-blue-600 rounded-full" animate={{ y: [-4, 4, -4] }} transition={{ duration: 0.6, repeat: Infinity, delay: i*0.1 }} />)}</span>
+                                        </div></div>
+                                    )}
+                                    <div ref={chatEndRef} />
+                                </div>
+
+                                {/* Input bar */}
+                                <div className="p-4 border-t border-gray-200 bg-white shadow-sm">
+                                    <form onSubmit={sendMessage} className="flex gap-3 items-center">
+                                        <motion.button type="button" onClick={toggleListening} disabled={isLoading}
+                                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                            className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center transition-all font-bold ${isListening
+                                                ? 'bg-red-100 border-2 border-red-500 text-red-600 shadow-md' : 'glass-card text-gray-600 hover:text-blue-600 border border-gray-300 hover:border-blue-300'} disabled:opacity-50`}>
+                                            <FiMic className="w-6 h-6" />
+                                        </motion.button>
+                                        <input value={userInput} onChange={e => setUserInput(e.target.value)} disabled={isLoading || isListening}
+                                            placeholder={isListening ? "Listening... speak now" : "Type your answer..."} 
+                                            className="input-field flex-1 h-14 px-5 rounded-2xl focus:ring-2 focus:ring-blue-500/50 focus:ring-opacity-50 outline-none" />
+                                        <motion.button type="submit" disabled={isLoading || !userInput.trim()}
+                                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                            className="w-14 h-14 shrink-0 gradient-btn rounded-2xl flex items-center justify-center disabled:opacity-30 transition-all shadow-md">
+                                            <FiSend className="w-5 h-5" />
+                                        </motion.button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ═══ EVALUATION ═══ */}
+                {step === 'evaluation' && evaluation && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100vh', zIndex: 9999, background: 'var(--bg-primary)', overflowY: 'auto', overflowX: 'hidden', margin: 0, padding: 0 }}>
+                        <div style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', padding: '3rem 2rem 4rem' }}>
+                            {/* Header with Success */}
+                            <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                                <div style={{
+                                    width: '100px',
+                                    height: '100px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: 'rgba(34, 197, 94, 0.1)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    fontSize: '3.5rem',
+                                    margin: '0 auto 1.5rem',
+                                    boxShadow: '0 10px 30px rgba(34, 197, 94, 0.2)'
+                                }}>✨</div>
+                                <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>Interview Complete!</h1>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', margin: 0, marginTop: '0.5rem' }}>
+                                    {jobRole} • {questionType} • {difficulty} • {formatTime(interviewTime)}
+                                </p>
+                            </div>
+
+                            {/* Score Card */}
+                            <div style={{
+                                background: 'var(--bg-card)',
+                                borderRadius: 'var(--radius-sm)',
+                                padding: '3rem',
+                                border: '1px solid var(--border)',
+                                boxShadow: 'var(--shadow)',
+                                marginBottom: '2rem'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+                                    <ScoreRing score={evaluation.score || 0} size={180} />
+                                </div>
+                            </div>
+
+                            {/* Rest of evaluation content... */}
+                            {evaluation.criteria && (
+                                <div style={{
+                                    background: 'var(--bg-card)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    padding: '2.5rem',
+                                    border: '1px solid var(--border)',
+                                    boxShadow: 'var(--shadow)',
+                                    marginBottom: '2rem'
+                                }}>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 2rem', color: 'var(--text-primary)' }}>Performance Breakdown</h2>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                                        {[
+                                            { label: 'Technical Accuracy', key: 'technicalAccuracy', color: '#22c55e' },
+                                            { label: 'Communication', key: 'communicationClarity', color: '#3b82f6' },
+                                            { label: 'Problem Solving', key: 'problemSolving', color: '#f59e0b' },
+                                            { label: 'Confidence & Delivery', key: 'confidenceDelivery', color: '#ec4899' }
+                                        ].map(item => (
+                                            <div key={item.key}>
+                                                <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>{item.label}</div>
+                                                <div style={{ height: '8px', background: 'var(--border)', borderRadius: '9999px', overflow: 'hidden' }}>
+                                                    <div style={{ height: '100%', width: `${((evaluation.criteria[item.key]?.score || 0) / 20) * 100}%`, background: item.color, transition: 'width 1.5s ease-out' }} />
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                                                    <span style={{ color: 'var(--text-secondary)' }}>Score</span>
+                                                    <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{evaluation.criteria[item.key]?.score || 0}/20</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Feedback & Action */}
+                            <div style={{
+                                background: 'var(--bg-card)',
+                                borderRadius: 'var(--radius-sm)',
+                                padding: '2.5rem',
+                                border: '1px solid var(--border)',
+                                boxShadow: 'var(--shadow)',
+                                marginBottom: '2rem'
+                            }}>
+                                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '0 0 1.5rem', color: 'var(--text-primary)' }}>💡 Overall Feedback</h2>
+                                <p style={{ color: 'var(--text-body)', lineHeight: 1.8, margin: 0, fontSize: '1rem' }}>{evaluation.feedback}</p>
+                            </div>
+
+                            {/* Strengths & Improvements */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+                                <div style={{
+                                    background: 'var(--bg-card)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    padding: '2rem',
+                                    border: '1px solid var(--border)',
+                                    boxShadow: 'var(--shadow)'
+                                }}>
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>✨ Strengths</h3>
+                                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        {(evaluation.strengths || []).map((s, i) => (
+                                            <li key={i} style={{ color: 'var(--text-body)', fontSize: '0.95rem', display: 'flex', gap: '0.75rem' }}>
+                                                <span style={{ color: '#22c55e', fontWeight: 700, flexShrink: 0 }}>✓</span>
+                                                <span>{s}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div style={{
+                                    background: 'var(--bg-card)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    padding: '2rem',
+                                    border: '1px solid var(--border)',
+                                    boxShadow: 'var(--shadow)'
+                                }}>
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>🎯 Areas to Improve</h3>
+                                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        {(evaluation.improvements || []).map((s, i) => (
+                                            <li key={i} style={{ color: 'var(--text-body)', fontSize: '0.95rem', display: 'flex', gap: '0.75rem' }}>
+                                                <span style={{ color: '#f59e0b', fontWeight: 700, flexShrink: 0 }}>→</span>
+                                                <span>{s}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+                                <button onClick={resetInterview} style={{
+                                    padding: '1.1rem 2.5rem',
+                                    fontWeight: 800,
+                                    borderRadius: 'var(--radius-sm)',
+                                    fontSize: '1.1rem',
+                                    background: 'var(--primary)',
+                                    color: 'white',
+                                    border: 'none',
+                                    boxShadow: '0 10px 25px -5px rgba(37, 99, 235, 0.4)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease'
+                                }}>
+                                    🚀 Try Another Interview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </>
+        );
+    }
+
+    // For setup, use Layout normally
     return (
         <Layout title="AI Mock Interview">
-            <style>{`
-                @keyframes waveform { from { transform: scaleY(0.4); } to { transform: scaleY(1); } }
-                .interview-fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100vh; z-index: 999; margin: 0 !important; padding: 0 !important; overflow: hidden; }
-            `}</style>
-
-            {/* ═══ SETUP ═══ */}
-            {step === 'setup' && (
                 <div className="fade-in" style={{ width: '100%', padding: '2rem 0 3rem 0' }}>
                     <div style={{ width: '100%', paddingBottom: '1rem', textAlign: 'left' }}>
                         {/* Header */}
@@ -513,274 +769,6 @@ const AIMockInterview = () => {
                         </div>
                     </div>
                 </div>
-            )}
-
-            {/* ═══ INTERVIEW ═══ */}
-            {step === 'interview' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="interview-fullscreen bg-white flex flex-col" style={{ marginTop: 0 }}>
-                    {/* Top bar */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shadow-sm">
-                        <div className="flex items-center gap-4">
-                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}
-                                className="w-3 h-3 rounded-full bg-emerald-500 shadow-lg" />
-                            <span className="text-gray-900 font-bold tracking-wide">Live Interview</span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-gray-600 font-medium">{jobRole} • {questionType}</span>
-                        </div>
-                        <div className="flex items-center gap-5">
-                            <div className="flex items-center gap-2 text-gray-700 text-sm font-mono bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
-                                <FiClock className="w-4 h-4 text-blue-600" />
-                                {formatTime(interviewTime)}
-                            </div>
-                            <span className="text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200">
-                                Q{questionsAsked}/{questionCount}
-                            </span>
-                            <button onClick={endInterview} data-interview-end-button className="text-sm font-semibold border border-red-300 hover:bg-red-50 hover:border-red-400 px-4 py-1.5 rounded-lg text-red-600 flex items-center gap-2 transition-all">
-                                <FiSquare className="w-3.5 h-3.5" /> End Session
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Main area */}
-                    <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-                        {/* AI Panel */}
-                        <div className="lg:w-1/3 flex flex-col items-center justify-center p-8 border-b lg:border-b-0 lg:border-r border-gray-200 bg-gradient-to-b from-blue-50 to-white">
-                            <AIAvatar isSpeaking={isSpeaking} />
-                            <h3 className="text-gray-900 font-bold text-xl mt-5">Sarah Chen</h3>
-                            <p className="text-gray-600 text-sm font-medium">Senior AI Interviewer</p>
-                            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mt-5 glass-card rounded-xl px-5 py-3">
-                                <span className={`text-sm font-semibold transition-colors ${isSpeaking ? 'text-blue-600' : isLoading ? 'text-amber-600' : 'text-green-600'}`}>
-                                    {isSpeaking ? '🎙️ Speaking...' : isLoading ? '🤔 Thinking...' : '👂 Listening'}
-                                </span>
-                            </motion.div>
-                        </div>
-
-                        {/* Chat / Transcript */}
-                        <div className="flex-1 flex flex-col bg-white">
-                            <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
-                                {chatHistory.map((msg, idx) => (
-                                    <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[80%] p-4 rounded-2xl transition-all ${msg.role === 'assistant'
-                                            ? 'glass-card text-gray-800 rounded-tl-sm shadow-sm border border-blue-100' : 'bg-blue-600 text-white rounded-tr-sm shadow-md'}`}>
-                                            <span className="text-[10px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: msg.role === 'assistant' ? '#2563eb' : 'white' }}>
-                                                {msg.role === 'assistant' ? '🤖 Sarah' : '👤 You'}
-                                            </span>
-                                            <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.content}</p>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                                {isLoading && (
-                                    <div className="flex justify-start"><div className="glass-card p-4 rounded-2xl rounded-tl-sm flex items-center gap-3 shadow-sm border border-blue-100">
-                                        <span className="text-[10px] font-bold text-blue-600 uppercase">Sarah</span>
-                                        <span className="flex gap-1.5">{[0,1,2].map(i => <motion.span key={i} className="w-2 h-2 bg-blue-600 rounded-full" animate={{ y: [-4, 4, -4] }} transition={{ duration: 0.6, repeat: Infinity, delay: i*0.1 }} />)}</span>
-                                    </div></div>
-                                )}
-                                <div ref={chatEndRef} />
-                            </div>
-
-                            {/* Input bar */}
-                            <div className="p-4 border-t border-gray-200 bg-white shadow-sm">
-                                <form onSubmit={sendMessage} className="flex gap-3 items-center">
-                                    <motion.button type="button" onClick={toggleListening} disabled={isLoading}
-                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                        className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center transition-all font-bold ${isListening
-                                            ? 'bg-red-100 border-2 border-red-500 text-red-600 shadow-md' : 'glass-card text-gray-600 hover:text-blue-600 border border-gray-300 hover:border-blue-300'} disabled:opacity-50`}>
-                                        <FiMic className="w-6 h-6" />
-                                    </motion.button>
-                                    <input value={userInput} onChange={e => setUserInput(e.target.value)} disabled={isLoading || isListening}
-                                        placeholder={isListening ? "Listening... speak now" : "Type your answer..."} 
-                                        className="input-field flex-1 h-14 px-5 rounded-2xl focus:ring-2 focus:ring-blue-500/50 focus:ring-opacity-50 outline-none" />
-                                    <motion.button type="submit" disabled={isLoading || !userInput.trim()}
-                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                        className="w-14 h-14 shrink-0 gradient-btn rounded-2xl flex items-center justify-center disabled:opacity-30 transition-all shadow-md">
-                                        <FiSend className="w-5 h-5" />
-                                    </motion.button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
-            )}
-
-            {/* ═══ EVALUATION ═══ */}
-            {step === 'evaluation' && evaluation && (
-                <div className="interview-fullscreen bg-white overflow-y-auto" style={{ background: 'var(--bg-primary)' }}>
-                    <div style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', padding: '3rem 2rem 4rem' }}>
-                        {/* Header with Success */}
-                        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                            <div style={{
-                                width: '100px',
-                                height: '100px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'rgba(34, 197, 94, 0.1)',
-                                borderRadius: 'var(--radius-sm)',
-                                fontSize: '3.5rem',
-                                margin: '0 auto 1.5rem',
-                                boxShadow: '0 10px 30px rgba(34, 197, 94, 0.2)'
-                            }}>✨</div>
-                            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>
-                                Interview Complete!
-                            </h1>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', margin: 0, marginTop: '0.5rem' }}>
-                                {jobRole} • {questionType} • {difficulty} • {formatTime(interviewTime)}
-                            </p>
-                        </div>
-
-                        {/* Score Card */}
-                        <div style={{
-                            background: 'var(--bg-card)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '3rem',
-                            border: '1px solid var(--border)',
-                            boxShadow: 'var(--shadow)',
-                            marginBottom: '2rem'
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
-                                <ScoreRing score={evaluation.score || 0} size={180} />
-                            </div>
-                        </div>
-
-                        {/* Criteria Breakdown */}
-                        {evaluation.criteria && (
-                            <div style={{
-                                background: 'var(--bg-card)',
-                                borderRadius: 'var(--radius-sm)',
-                                padding: '2.5rem',
-                                border: '1px solid var(--border)',
-                                boxShadow: 'var(--shadow)',
-                                marginBottom: '2rem'
-                            }}>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 2rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--primary)' }}></span>
-                                    Performance Breakdown
-                                </h2>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                                    <div>
-                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Technical Accuracy</div>
-                                        <div style={{ height: '8px', background: 'var(--border)', borderRadius: '9999px', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: `${((evaluation.criteria.technicalAccuracy?.score || 0) / 20) * 100}%`, background: 'linear-gradient(90deg, #22c55e, #16a34a)', transition: 'width 1.5s ease-out' }} />
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Score</span>
-                                            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{evaluation.criteria.technicalAccuracy?.score || 0}/20</span>
-                                        </div>
-                                        {evaluation.criteria.technicalAccuracy?.feedback && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem', margin: '0.5rem 0 0' }}>{evaluation.criteria.technicalAccuracy.feedback}</p>}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Communication Clarity</div>
-                                        <div style={{ height: '8px', background: 'var(--border)', borderRadius: '9999px', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: `${((evaluation.criteria.communicationClarity?.score || 0) / 20) * 100}%`, background: 'linear-gradient(90deg, #3b82f6, #1d4ed8)', transition: 'width 1.5s ease-out' }} />
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Score</span>
-                                            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{evaluation.criteria.communicationClarity?.score || 0}/20</span>
-                                        </div>
-                                        {evaluation.criteria.communicationClarity?.feedback && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem', margin: '0.5rem 0 0' }}>{evaluation.criteria.communicationClarity.feedback}</p>}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Problem Solving</div>
-                                        <div style={{ height: '8px', background: 'var(--border)', borderRadius: '9999px', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: `${((evaluation.criteria.problemSolving?.score || 0) / 20) * 100}%`, background: 'linear-gradient(90deg, #f59e0b, #d97706)', transition: 'width 1.5s ease-out' }} />
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Score</span>
-                                            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{evaluation.criteria.problemSolving?.score || 0}/20</span>
-                                        </div>
-                                        {evaluation.criteria.problemSolving?.feedback && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem', margin: '0.5rem 0 0' }}>{evaluation.criteria.problemSolving.feedback}</p>}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Confidence & Delivery</div>
-                                        <div style={{ height: '8px', background: 'var(--border)', borderRadius: '9999px', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: `${((evaluation.criteria.confidenceDelivery?.score || 0) / 20) * 100}%`, background: 'linear-gradient(90deg, #ec4899, #be185d)', transition: 'width 1.5s ease-out' }} />
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Score</span>
-                                            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{evaluation.criteria.confidenceDelivery?.score || 0}/20</span>
-                                        </div>
-                                        {evaluation.criteria.confidenceDelivery?.feedback && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem', margin: '0.5rem 0 0' }}>{evaluation.criteria.confidenceDelivery.feedback}</p>}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Feedback */}
-                        <div style={{
-                            background: 'var(--bg-card)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '2.5rem',
-                            border: '1px solid var(--border)',
-                            boxShadow: 'var(--shadow)',
-                            marginBottom: '2rem'
-                        }}>
-                            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '0 0 1.5rem', color: 'var(--text-primary)' }}>💡 Overall Feedback</h2>
-                            <p style={{ color: 'var(--text-body)', lineHeight: 1.8, margin: 0, fontSize: '1rem' }}>{evaluation.feedback}</p>
-                        </div>
-
-                        {/* Strengths & Improvements */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
-                            <div style={{
-                                background: 'var(--bg-card)',
-                                borderRadius: 'var(--radius-sm)',
-                                padding: '2rem',
-                                border: '1px solid var(--border)',
-                                boxShadow: 'var(--shadow)'
-                            }}>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    ✨ Strengths
-                                </h3>
-                                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    {(evaluation.strengths || []).map((s, i) => (
-                                        <li key={i} style={{ color: 'var(--text-body)', fontSize: '0.95rem', display: 'flex', gap: '0.75rem' }}>
-                                            <span style={{ color: '#22c55e', fontWeight: 700, flexShrink: 0 }}>✓</span>
-                                            <span>{s}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                            <div style={{
-                                background: 'var(--bg-card)',
-                                borderRadius: 'var(--radius-sm)',
-                                padding: '2rem',
-                                border: '1px solid var(--border)',
-                                boxShadow: 'var(--shadow)'
-                            }}>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    🎯 Areas to Improve
-                                </h3>
-                                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    {(evaluation.improvements || []).map((s, i) => (
-                                        <li key={i} style={{ color: 'var(--text-body)', fontSize: '0.95rem', display: 'flex', gap: '0.75rem' }}>
-                                            <span style={{ color: '#f59e0b', fontWeight: 700, flexShrink: 0 }}>→</span>
-                                            <span>{s}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-
-                        {/* Action Button */}
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                            <button onClick={resetInterview} style={{
-                                padding: '1.1rem 2.5rem',
-                                fontWeight: 800,
-                                borderRadius: 'var(--radius-sm)',
-                                fontSize: '1.1rem',
-                                background: 'var(--primary)',
-                                color: 'white',
-                                border: 'none',
-                                boxShadow: '0 10px 25px -5px rgba(37, 99, 235, 0.4)',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            }}>
-                                🚀 Try Another Interview
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </Layout>
     );
 };
