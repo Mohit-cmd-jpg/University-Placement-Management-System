@@ -19,14 +19,14 @@ const ScoreRing = ({ score, max = 100, size = 160, strokeWidth = 10, color }) =>
     return (
         <div className="relative" style={{ width: size, height: size }}>
             <svg width={size} height={size} className="transform -rotate-90">
-                <circle cx={size/2} cy={size/2} r={radius} stroke="rgba(255,255,255,0.1)" strokeWidth={strokeWidth} fill="none" />
+                <circle cx={size/2} cy={size/2} r={radius} stroke="rgba(37,99,235,0.15)" strokeWidth={strokeWidth} fill="none" />
                 <circle cx={size/2} cy={size/2} r={radius} stroke={scoreColor} strokeWidth={strokeWidth} fill="none"
                     strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
                     style={{ transition: 'stroke-dashoffset 1.5s ease-out' }} />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-black text-white">{animatedScore}</span>
-                <span className="text-xs text-gray-400">/ {max}</span>
+                <span className="text-4xl font-black" style={{ color: scoreColor }}>{animatedScore}</span>
+                <span className="text-xs text-gray-500">/ {max}</span>
             </div>
         </div>
     );
@@ -39,24 +39,24 @@ const CriteriaBar = ({ label, score, max = 20, feedback }) => {
     return (
         <div className="mb-4">
             <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-300 font-medium">{label}</span>
-                <span className="text-white font-bold">{score}/{max}</span>
+                <span className="text-gray-700 font-medium">{label}</span>
+                <span className="text-gray-900 font-bold">{score}/{max}</span>
             </div>
-            <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
                 <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.2, ease: 'easeOut' }}
                     className="h-full rounded-full" style={{ backgroundColor: barColor }} />
             </div>
-            {feedback && <p className="text-xs text-gray-500 mt-1">{feedback}</p>}
+            {feedback && <p className="text-xs text-gray-600 mt-1">{feedback}</p>}
         </div>
     );
 };
 
 // ─── Audio Waveform Visualizer ───
-const WaveformVisualizer = ({ isActive, color = '#818cf8' }) => (
+const WaveformVisualizer = ({ isActive, color = '#2563eb' }) => (
     <div className="flex items-center gap-[3px] h-8">
         {[...Array(12)].map((_, i) => (
             <div key={i} className="w-[3px] rounded-full transition-all duration-150" style={{
-                backgroundColor: color, opacity: isActive ? 0.9 : 0.2,
+                backgroundColor: color, opacity: isActive ? 0.8 : 0.3,
                 height: isActive ? `${12 + Math.random() * 20}px` : '6px',
                 animation: isActive ? `waveform 0.4s ease-in-out ${i * 0.05}s infinite alternate` : 'none',
             }} />
@@ -67,12 +67,12 @@ const WaveformVisualizer = ({ isActive, color = '#818cf8' }) => (
 // ─── AI Avatar ───
 const AIAvatar = ({ isSpeaking }) => (
     <div className="relative">
-        <div className={`w-28 h-28 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl ${isSpeaking ? 'ring-4 ring-indigo-400/50 animate-pulse' : ''}`}>
+        <div className={`w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-xl ${isSpeaking ? 'ring-4 ring-blue-400/50 animate-pulse' : ''}`}>
             <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none">
-                <circle cx="40" cy="28" r="14" fill="white" opacity="0.9"/>
-                <path d="M18 65c0-12 10-22 22-22s22 10 22 22" stroke="white" strokeWidth="3" fill="white" opacity="0.7"/>
-                <circle cx="34" cy="26" r="2" fill="#4338ca"/><circle cx="46" cy="26" r="2" fill="#4338ca"/>
-                <path d="M35 34 Q40 38 45 34" stroke="#4338ca" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                <circle cx="40" cy="28" r="14" fill="white" opacity="0.95"/>
+                <path d="M18 65c0-12 10-22 22-22s22 10 22 22" stroke="white" strokeWidth="3" fill="white" opacity="0.85"/>
+                <circle cx="34" cy="26" r="2" fill="#1d4ed8"/><circle cx="46" cy="26" r="2" fill="#1d4ed8"/>
+                <path d="M35 34 Q40 38 45 34" stroke="#1d4ed8" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
             </svg>
         </div>
         {isSpeaking && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2"><WaveformVisualizer isActive={true} /></div>}
@@ -279,72 +279,73 @@ const AIMockInterview = () => {
                 @keyframes waveform { from { transform: scaleY(0.4); } to { transform: scaleY(1); } }
                 @keyframes shimmer { 0% { backgroundPosition: -1000px 0; } 100% { backgroundPosition: 1000px 0; } }
                 @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
-                .interview-bg { background: linear-gradient(135deg, #0a0e27 0%, #16213e 25%, #0f3460 50%, #1a1f35 75%, #0d1620 100%); }
-                .interview-bg-alt { background: linear-gradient(135deg, #1a1f35 0%, #16213e 50%, #0a0e27 100%); }
-                .glass-card { background: rgba(255,255,255,0.06); backdrop-filter: blur(16px) saturate(180%); border: 1px solid rgba(255,255,255,0.12); }
-                .glass-card-sm { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
-                .glow-btn { box-shadow: 0 0 30px rgba(99,102,241,0.5), 0 0 60px rgba(99,102,241,0.2); transition: box-shadow 0.3s ease; }
-                .gradient-btn { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
-                .gradient-btn:hover { background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%); box-shadow: 0 0 30px rgba(99,102,241,0.6); }
-                .input-field { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s ease; }
-                .input-field:focus { background: rgba(255,255,255,0.08); border-color: rgba(99,102,241,0.5); box-shadow: inset 0 0 20px rgba(99,102,241,0.1); }
-                .input-field::placeholder { color: rgba(226,232,240,0.4); }
+                .interview-bg { background: var(--bg-dark); }
+                .interview-bg-alt { background: var(--bg-dark); }
+                .glass-card { background: rgba(255,255,255,0.6); backdrop-filter: blur(12px) saturate(180%); border: 1px solid var(--border-glass); box-shadow: var(--shadow-glass); }
+                .glass-card-sm { background: rgba(255,255,255,0.5); backdrop-filter: blur(8px); border: 1px solid var(--border-light); }
+                .glow-btn { box-shadow: 0 0 20px rgba(37,99,235,0.3), 0 0 40px rgba(37,99,235,0.1); transition: box-shadow 0.3s ease; }
+                .gradient-btn { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; }
+                .gradient-btn:hover { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 0 20px rgba(37,99,235,0.5); }
+                .input-field { background: rgba(255,255,255,1); border: 1px solid var(--border); transition: all 0.3s ease; color: var(--text-primary); }
+                .input-field:focus { background: var(--bg-input); border-color: #2563eb; box-shadow: inset 0 0 0 2px rgba(37,99,235,0.1); }
+                .input-field::placeholder { color: var(--text-muted); }
                 .float-animation { animation: float 3s ease-in-out infinite; }
+                .interview-fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100vh; z-index: 999; margin: 0 !important; padding: 0 !important; overflow: hidden; }
             `}</style>
 
             {/* ═══ SETUP ═══ */}
             {step === 'setup' && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="min-h-screen interview-bg-alt py-12 px-4">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="min-h-screen interview-bg py-12 px-4">
                     <div className="max-w-2xl mx-auto">
-                        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="interview-bg rounded-3xl p-8 shadow-2xl border border-white/8">
+                        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
                             <div className="text-center mb-10">
                                 <motion.div initial={{ scale: 0, rotate: -10 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', delay: 0.1 }}
-                                    className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-2xl float-animation">
+                                    className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-6 shadow-lg float-animation">
                                     <svg viewBox="0 0 40 40" className="w-12 h-12" fill="none">
                                         <circle cx="20" cy="14" r="7" fill="white" opacity="0.95"/>
                                         <path d="M9 33c0-6 5-11 11-11s11 5 11 11" fill="white" opacity="0.85"/>
-                                        <circle cx="13" cy="12" r="1.5" fill="#6366f1" opacity="0.8"/><circle cx="27" cy="12" r="1.5" fill="#6366f1" opacity="0.8"/>
+                                        <circle cx="13" cy="12" r="1.5" fill="#1d4ed8" opacity="0.8"/><circle cx="27" cy="12" r="1.5" fill="#1d4ed8" opacity="0.8"/>
                                     </svg>
                                 </motion.div>
-                                <h1 className="text-4xl font-extrabold text-white tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">
+                                <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
                                     AI Mock Interview
                                 </h1>
-                                <p className="text-gray-400 mt-3 text-lg">Practice with AI-powered realistic interviews powered by advanced language models</p>
+                                <p className="text-gray-600 mt-3 text-lg">Practice with AI-powered realistic interviews powered by advanced language models</p>
                             </div>
 
                             <form onSubmit={startInterview} className="space-y-6">
                                 {/* Job Role */}
                                 <div className="group">
-                                    <label className="block text-sm font-semibold text-gray-300 mb-2.5 uppercase tracking-wider">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2.5 uppercase tracking-wider">
                                         🎯 Target Role *
                                     </label>
                                     <input type="text" value={jobRole} onChange={e => setJobRole(e.target.value)} required placeholder="e.g. Senior Frontend Engineer"
-                                        className="input-field w-full px-4 py-3.5 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 outline-none" />
+                                        className="input-field w-full px-4 py-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 outline-none" />
                                 </div>
 
                                 {/* Interview Type & Difficulty */}
                                 <div className="grid grid-cols-2 gap-5">
                                     <div className="group">
-                                        <label className="block text-sm font-semibold text-gray-300 mb-2.5 uppercase tracking-wider">
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2.5 uppercase tracking-wider">
                                             📚 Interview Type
                                         </label>
                                         <select value={questionType} onChange={e => setQuestionType(e.target.value)}
-                                            className="input-field w-full px-4 py-3.5 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 outline-none appearance-none cursor-pointer">
-                                            <option value="technical" className="bg-gray-900">Technical</option>
-                                            <option value="behavioral" className="bg-gray-900">Behavioral</option>
-                                            <option value="hr" className="bg-gray-900">HR</option>
-                                            <option value="system-design" className="bg-gray-900">System Design</option>
+                                            className="input-field w-full px-4 py-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 outline-none appearance-none cursor-pointer">
+                                            <option value="technical" className="bg-white">Technical</option>
+                                            <option value="behavioral" className="bg-white">Behavioral</option>
+                                            <option value="hr" className="bg-white">HR</option>
+                                            <option value="system-design" className="bg-white">System Design</option>
                                         </select>
                                     </div>
                                     <div className="group">
-                                        <label className="block text-sm font-semibold text-gray-300 mb-2.5 uppercase tracking-wider">
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2.5 uppercase tracking-wider">
                                             ⚡ Difficulty
                                         </label>
                                         <div className="flex gap-2">
                                             {['Easy','Medium','Hard'].map(d => (
                                                 <button key={d} type="button" onClick={() => setDifficulty(d)}
                                                     className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${difficulty === d
-                                                        ? 'gradient-btn text-white shadow-lg shadow-indigo-500/50' : 'glass-card text-gray-400 hover:text-gray-300 hover:bg-white/10'}`}>
+                                                        ? 'gradient-btn text-white shadow-lg shadow-blue-500/30' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'}`}>
                                                     {d}
                                                 </button>
                                             ))}
@@ -355,30 +356,30 @@ const AIMockInterview = () => {
                                 {/* Question Count */}
                                 <div className="glass-card rounded-2xl p-5">
                                     <div className="flex items-center justify-between mb-3">
-                                        <label className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
+                                        <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
                                             📝 Number of Questions
                                         </label>
-                                        <span className="text-lg font-bold gradient-text text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                                        <span className="text-lg font-bold text-blue-600">
                                             {questionCount}
                                         </span>
                                     </div>
                                     <input type="range" min="3" max="10" value={questionCount} onChange={e => setQuestionCount(Number(e.target.value))}
-                                        className="w-full accent-indigo-500 h-2 bg-white/10 rounded-full cursor-pointer" />
-                                    <div className="flex justify-between text-xs text-gray-500 mt-2"><span>3 (Quick)</span><span>10 (Full)</span></div>
+                                        className="w-full accent-blue-500 h-2 bg-gray-200 rounded-full cursor-pointer" />
+                                    <div className="flex justify-between text-xs text-gray-600 mt-2"><span>3 (Quick)</span><span>10 (Full)</span></div>
                                 </div>
 
                                 {/* Resume Upload */}
                                 <div className="group">
-                                    <label className="block text-sm font-semibold text-gray-300 mb-2.5 uppercase tracking-wider">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2.5 uppercase tracking-wider">
                                         📄 Resume (PDF - Optional)
                                     </label>
-                                    <div className="border-2 border-dashed border-indigo-500/30 hover:border-indigo-500/60 rounded-xl p-8 text-center transition-all cursor-pointer backdrop-blur-sm"
+                                    <div className="border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-xl p-8 text-center transition-all cursor-pointer bg-blue-50"
                                         onClick={() => document.getElementById('resume-input').click()}>
                                         <div className="flex justify-center mb-3">
-                                            <FiUpload className="w-10 h-10 text-indigo-400/60" />
+                                            <FiUpload className="w-10 h-10 text-blue-600" />
                                         </div>
-                                        <p className="text-sm font-semibold text-gray-300">{resume ? resume.name : 'Upload your resume'}</p>
-                                        <p className="text-xs text-gray-500 mt-1">PDF format • Max 5MB</p>
+                                        <p className="text-sm font-semibold text-gray-700">{resume ? resume.name : 'Upload your resume'}</p>
+                                        <p className="text-xs text-gray-600 mt-1">PDF format • Max 5MB</p>
                                         <input id="resume-input" type="file" accept="application/pdf" onChange={e => setResume(e.target.files[0])} className="hidden" />
                                     </div>
                                 </div>
@@ -408,25 +409,25 @@ const AIMockInterview = () => {
 
             {/* ═══ INTERVIEW ═══ */}
             {step === 'interview' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="interview-bg fixed inset-0 z-50 flex flex-col" style={{ marginTop: 0 }}>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="interview-fullscreen bg-white flex flex-col" style={{ marginTop: 0 }}>
                     {/* Top bar */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-gradient-to-r from-black/40 to-transparent backdrop-blur-lg">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shadow-sm">
                         <div className="flex items-center gap-4">
                             <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}
-                                className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-emerald-400 shadow-lg shadow-green-500/50" />
-                            <span className="text-white font-bold tracking-wide">Live Interview</span>
-                            <span className="text-gray-500">•</span>
-                            <span className="text-gray-400 font-medium">{jobRole} • {questionType}</span>
+                                className="w-3 h-3 rounded-full bg-emerald-500 shadow-lg" />
+                            <span className="text-gray-900 font-bold tracking-wide">Live Interview</span>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-gray-600 font-medium">{jobRole} • {questionType}</span>
                         </div>
                         <div className="flex items-center gap-5">
-                            <div className="flex items-center gap-2 text-gray-300 text-sm font-mono bg-white/5 px-3 py-1.5 rounded-lg">
-                                <FiClock className="w-4 h-4 text-indigo-400" />
+                            <div className="flex items-center gap-2 text-gray-700 text-sm font-mono bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
+                                <FiClock className="w-4 h-4 text-blue-600" />
                                 {formatTime(interviewTime)}
                             </div>
-                            <span className="text-xs font-bold bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 px-3 py-1.5 rounded-full border border-indigo-500/30">
+                            <span className="text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200">
                                 Q{questionsAsked}/{questionCount}
                             </span>
-                            <button onClick={endInterview} className="text-sm font-semibold border border-red-500/40 hover:bg-red-500/15 hover:border-red-500/60 px-4 py-1.5 rounded-lg text-red-400 flex items-center gap-2 transition-all">
+                            <button onClick={endInterview} className="text-sm font-semibold border border-red-300 hover:bg-red-50 hover:border-red-400 px-4 py-1.5 rounded-lg text-red-600 flex items-center gap-2 transition-all">
                                 <FiSquare className="w-3.5 h-3.5" /> End Session
                             </button>
                         </div>
@@ -435,26 +436,26 @@ const AIMockInterview = () => {
                     {/* Main area */}
                     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                         {/* AI Panel */}
-                        <div className="lg:w-1/3 flex flex-col items-center justify-center p-8 border-b lg:border-b-0 lg:border-r border-white/5 bg-gradient-to-br from-black/20 to-transparent">
+                        <div className="lg:w-1/3 flex flex-col items-center justify-center p-8 border-b lg:border-b-0 lg:border-r border-gray-200 bg-gradient-to-b from-blue-50 to-white">
                             <AIAvatar isSpeaking={isSpeaking} />
-                            <h3 className="text-white font-bold text-xl mt-5">Sarah Chen</h3>
-                            <p className="text-gray-500 text-sm font-medium">Senior AI Interviewer</p>
+                            <h3 className="text-gray-900 font-bold text-xl mt-5">Sarah Chen</h3>
+                            <p className="text-gray-600 text-sm font-medium">Senior AI Interviewer</p>
                             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mt-5 glass-card rounded-xl px-5 py-3">
-                                <span className={`text-sm font-semibold transition-colors ${isSpeaking ? 'text-indigo-300' : isLoading ? 'text-amber-300' : 'text-emerald-300'}`}>
+                                <span className={`text-sm font-semibold transition-colors ${isSpeaking ? 'text-blue-600' : isLoading ? 'text-amber-600' : 'text-green-600'}`}>
                                     {isSpeaking ? '🎙️ Speaking...' : isLoading ? '🤔 Thinking...' : '👂 Listening'}
                                 </span>
                             </motion.div>
                         </div>
 
                         {/* Chat / Transcript */}
-                        <div className="flex-1 flex flex-col bg-gradient-to-b from-black/10 to-transparent">
+                        <div className="flex-1 flex flex-col bg-white">
                             <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
                                 {chatHistory.map((msg, idx) => (
                                     <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                                         className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`max-w-[80%] p-4 rounded-2xl transition-all ${msg.role === 'assistant'
-                                            ? 'glass-card text-gray-100 rounded-tl-sm shadow-lg border border-indigo-500/20' : 'bg-gradient-to-br from-indigo-600/80 to-purple-600/60 text-white rounded-tr-sm shadow-lg'}`}>
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">
+                                            ? 'glass-card text-gray-800 rounded-tl-sm shadow-sm border border-blue-100' : 'bg-blue-600 text-white rounded-tr-sm shadow-md'}`}>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: msg.role === 'assistant' ? '#2563eb' : 'white' }}>
                                                 {msg.role === 'assistant' ? '🤖 Sarah' : '👤 You'}
                                             </span>
                                             <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.content}</p>
@@ -462,29 +463,29 @@ const AIMockInterview = () => {
                                     </motion.div>
                                 ))}
                                 {isLoading && (
-                                    <div className="flex justify-start"><div className="glass-card p-4 rounded-2xl rounded-tl-sm flex items-center gap-3 border border-indigo-500/20">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Sarah</span>
-                                        <span className="flex gap-1.5">{[0,1,2].map(i => <motion.span key={i} className="w-2 h-2 bg-indigo-400 rounded-full" animate={{ y: [-4, 4, -4] }} transition={{ duration: 0.6, repeat: Infinity, delay: i*0.1 }} />)}</span>
+                                    <div className="flex justify-start"><div className="glass-card p-4 rounded-2xl rounded-tl-sm flex items-center gap-3 shadow-sm border border-blue-100">
+                                        <span className="text-[10px] font-bold text-blue-600 uppercase">Sarah</span>
+                                        <span className="flex gap-1.5">{[0,1,2].map(i => <motion.span key={i} className="w-2 h-2 bg-blue-600 rounded-full" animate={{ y: [-4, 4, -4] }} transition={{ duration: 0.6, repeat: Infinity, delay: i*0.1 }} />)}</span>
                                     </div></div>
                                 )}
                                 <div ref={chatEndRef} />
                             </div>
 
                             {/* Input bar */}
-                            <div className="p-4 border-t border-white/10 bg-gradient-to-t from-black/40 to-transparent backdrop-blur-sm">
+                            <div className="p-4 border-t border-gray-200 bg-white shadow-sm">
                                 <form onSubmit={sendMessage} className="flex gap-3 items-center">
                                     <motion.button type="button" onClick={toggleListening} disabled={isLoading}
                                         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                         className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center transition-all font-bold ${isListening
-                                            ? 'bg-gradient-to-br from-red-500/30 to-red-600/20 border-2 border-red-500/60 text-red-400 shadow-lg shadow-red-500/40 glow-btn' : 'glass-card text-gray-400 hover:text-white border border-indigo-500/30 hover:border-indigo-500/60'} disabled:opacity-50`}>
+                                            ? 'bg-red-100 border-2 border-red-500 text-red-600 shadow-md' : 'glass-card text-gray-600 hover:text-blue-600 border border-gray-300 hover:border-blue-300'} disabled:opacity-50`}>
                                         <FiMic className="w-6 h-6" />
                                     </motion.button>
                                     <input value={userInput} onChange={e => setUserInput(e.target.value)} disabled={isLoading || isListening}
                                         placeholder={isListening ? "Listening... speak now" : "Type your answer..."} 
-                                        className="input-field flex-1 h-14 px-5 rounded-2xl text-white focus:ring-2 focus:ring-indigo-500/50 focus:ring-opacity-50 outline-none" />
+                                        className="input-field flex-1 h-14 px-5 rounded-2xl focus:ring-2 focus:ring-blue-500/50 focus:ring-opacity-50 outline-none" />
                                     <motion.button type="submit" disabled={isLoading || !userInput.trim()}
                                         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                        className="w-14 h-14 shrink-0 gradient-btn text-white rounded-2xl flex items-center justify-center disabled:opacity-30 transition-all shadow-lg">
+                                        className="w-14 h-14 shrink-0 gradient-btn rounded-2xl flex items-center justify-center disabled:opacity-30 transition-all shadow-md">
                                         <FiSend className="w-5 h-5" />
                                     </motion.button>
                                 </form>
@@ -496,18 +497,18 @@ const AIMockInterview = () => {
 
             {/* ═══ EVALUATION ═══ */}
             {step === 'evaluation' && evaluation && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="min-h-screen interview-bg-alt py-12 px-4">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="min-h-screen interview-bg py-12 px-4">
                     <div className="max-w-4xl mx-auto">
                         {/* Header */}
-                        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="interview-bg rounded-3xl p-8 shadow-2xl border border-white/8 mb-6">
+                        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 mb-6">
                             <div className="text-center mb-8">
                                 <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', delay: 0.1 }}>
-                                    <div className="inline-block p-4 rounded-full bg-gradient-to-br from-emerald-400/20 to-green-500/20 border border-green-500/30 mb-4">
-                                        <FiCheckCircle className="w-12 h-12 text-green-400" />
+                                    <div className="inline-block p-4 rounded-full bg-green-100 border border-green-300 mb-4">
+                                        <FiCheckCircle className="w-12 h-12 text-green-600" />
                                     </div>
                                 </motion.div>
-                                <h1 className="text-4xl font-extrabold text-white mb-2">Interview Complete! 🎉</h1>
-                                <p className="text-gray-400">{jobRole} • {questionType} • {difficulty} • {formatTime(interviewTime)}</p>
+                                <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Interview Complete! 🎉</h1>
+                                <p className="text-gray-600">{jobRole} • {questionType} • {difficulty} • {formatTime(interviewTime)}</p>
                             </div>
 
                             {/* Score Ring */}
@@ -519,9 +520,9 @@ const AIMockInterview = () => {
                         {/* Criteria Breakdown */}
                         {evaluation.criteria && (
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                                className="interview-bg rounded-3xl p-8 shadow-2xl border border-white/8 mb-6">
-                                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400"></span>
+                                className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 mb-6">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                                    <span className="w-3 h-3 rounded-full bg-blue-600"></span>
                                     Performance Breakdown
                                 </h2>
                                 <div className="space-y-5">
@@ -536,37 +537,37 @@ const AIMockInterview = () => {
 
                         {/* Feedback */}
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                            className="interview-bg rounded-3xl p-8 shadow-2xl border border-white/8 mb-6">
-                            <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                            className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
                                 <span className="text-2xl">💡</span> Overall Feedback
                             </h2>
-                            <p className="text-gray-300 leading-relaxed text-lg">{evaluation.feedback}</p>
+                            <p className="text-gray-700 leading-relaxed text-lg">{evaluation.feedback}</p>
                         </motion.div>
 
                         {/* Strengths & Improvements */}
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
                             className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div className="interview-bg rounded-3xl p-8 shadow-2xl border border-emerald-500/20">
-                                <h3 className="text-xl font-bold text-emerald-400 mb-4 flex items-center gap-2">
+                            <div className="bg-white rounded-3xl p-8 shadow-lg border border-green-200">
+                                <h3 className="text-xl font-bold text-green-700 mb-4 flex items-center gap-2">
                                     <span>✨</span> Strengths
                                 </h3>
                                 <ul className="space-y-3">
                                     {(evaluation.strengths || []).map((s,i) => (
-                                        <li key={i} className="text-gray-300 text-sm flex gap-3">
-                                            <span className="text-emerald-400 shrink-0 font-bold">✓</span>
+                                        <li key={i} className="text-gray-700 text-sm flex gap-3">
+                                            <span className="text-green-600 shrink-0 font-bold">✓</span>
                                             <span>{s}</span>
                                         </li>
                                     ))}
                                 </ul>
                             </div>
-                            <div className="interview-bg rounded-3xl p-8 shadow-2xl border border-amber-500/20">
-                                <h3 className="text-xl font-bold text-amber-400 mb-4 flex items-center gap-2">
+                            <div className="bg-white rounded-3xl p-8 shadow-lg border border-amber-200">
+                                <h3 className="text-xl font-bold text-amber-700 mb-4 flex items-center gap-2">
                                     <span>🎯</span> Areas to Improve
                                 </h3>
                                 <ul className="space-y-3">
                                     {(evaluation.improvements || []).map((s,i) => (
-                                        <li key={i} className="text-gray-300 text-sm flex gap-3">
-                                            <span className="text-amber-400 shrink-0 font-bold">→</span>
+                                        <li key={i} className="text-gray-700 text-sm flex gap-3">
+                                            <span className="text-amber-600 shrink-0 font-bold">→</span>
                                             <span>{s}</span>
                                         </li>
                                     ))}
@@ -577,20 +578,20 @@ const AIMockInterview = () => {
                         {/* Per-Question */}
                         {evaluation.perQuestion && evaluation.perQuestion.length > 0 && (
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-                                className="interview-bg rounded-3xl p-8 shadow-2xl border border-white/8 mb-6">
-                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                                className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 mb-6">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
                                     <span className="text-2xl">📋</span> Question-by-Question Review
                                 </h2>
                                 <div className="space-y-2">
                                     {evaluation.perQuestion.map((q, i) => (
-                                        <div key={i} className="border border-white/10 rounded-2xl overflow-hidden">
+                                        <div key={i} className="border border-gray-200 rounded-2xl overflow-hidden">
                                             <button onClick={() => setExpandedQ(expandedQ === i ? null : i)}
-                                                className="w-full flex justify-between items-center py-4 px-5 hover:bg-white/5 transition-colors text-left">
-                                                <span className="text-gray-300 text-sm flex-1 pr-4 font-medium">
-                                                    <span className="text-indigo-400 font-bold">Q{i+1}</span>: {q.question?.substring(0, 80)}{q.question?.length > 80 ? '...' : ''}
+                                                className="w-full flex justify-between items-center py-4 px-5 hover:bg-gray-50 transition-colors text-left">
+                                                <span className="text-gray-700 text-sm flex-1 pr-4 font-medium">
+                                                    <span className="text-blue-600 font-bold">Q{i+1}</span>: {q.question?.substring(0, 80)}{q.question?.length > 80 ? '...' : ''}
                                                 </span>
                                                 <div className="flex items-center gap-3">
-                                                    <span className={`text-sm font-bold px-3 py-1 rounded-lg ${q.score >= 7 ? 'bg-green-500/20 text-green-400' : q.score >= 4 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                    <span className={`text-sm font-bold px-3 py-1 rounded-lg ${q.score >= 7 ? 'bg-green-100 text-green-700' : q.score >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                                                         {q.score}/10
                                                     </span>
                                                     {expandedQ === i ? <FiChevronUp className="text-gray-500" /> : <FiChevronDown className="text-gray-500" />}
@@ -599,8 +600,8 @@ const AIMockInterview = () => {
                                             <AnimatePresence>
                                                 {expandedQ === i && (
                                                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                                                        className="overflow-hidden border-t border-white/10 bg-white/5 px-5 py-4">
-                                                        <p className="text-gray-400 text-sm leading-relaxed">{q.feedback}</p>
+                                                        className="overflow-hidden border-t border-gray-200 bg-gray-50 px-5 py-4">
+                                                        <p className="text-gray-700 text-sm leading-relaxed">{q.feedback}</p>
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>
