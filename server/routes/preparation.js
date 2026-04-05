@@ -1,5 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/temp/' });
 const router = express.Router();
 const { auth } = require('../middleware/auth');
 const InterviewQuestion = require('../models/InterviewQuestion');
@@ -12,7 +14,10 @@ const {
     generateInterviewQuestions,
     evaluateInterviewAnswer,
     saveGeneratedQuestions,
-    calculateTestDuration
+    calculateTestDuration,
+    extractResumeForInterview,
+    generateInterviewReply,
+    analyzeInterviewPerformance
 } = require('../services/aiService');
 
 // ─── Database Cleanup Migration ────────────────────────────────────────────
@@ -368,4 +373,75 @@ router.post('/mock-tests/:id/submit', auth, async (req, res) => {
     }
 });
 
-module.exports = router;
+// ──────────────── AI Mock Interview System Routes ────────────────
+const fs = require('fs');
+
+// 1. Upload Resume & Start Mock Interview
+router.post('/mock-interview/start', auth, upload.single('resume'), async (req, res) => {
+    try {
+        const { jobRole, questionType } = req.body;
+        
+        if (!jobRole || !questionType) {
+            return res.status(400).json({ error: 'Job role and question type are required.' });
+        }
+        
+        let candidateProfile = { skills: [], experience: [], projects: [], summary: "Student" };
+        
+        if (req.file) {
+            // Parse the uploaded PDF with GitHub Models
+            const pdfBuffer = fs.readFileSync(req.file.path);
+            candidateProfile = await extractResumeForInterview(pdfBuffer);
+            // Cleanup temp file
+            fs.unlinkSync(req.file.path);
+        }
+        
+        // Generate the very first introductory AI message
+        const initialReply = await generateInterviewReply(candidateProfile, jobRole, questionType, []);
+        
+        res.json({
+            candidateProfile,
+            initialReply
+        });
+    } catch (err) {
+        console.error('[Mock Interview Start Error]:', err);
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ error: 'Failed to start interview. ' + err.message });
+    }
+});
+
+// 2. Continue Chat
+router.post('/mock-interview/chat', auth, async (req, res) => {
+    try {
+        const { candidateProfile, jobRole, questionType, chatHistory } = req.body;
+        
+        if (!chatHistory || !Array.isArray(chatHistory)) {
+             return res.status(400).json({ error: 'Valid chatHistory array is required.' });
+        }
+
+        const reply = await generateInterviewReply(candidateProfile, jobRole, questionType, chatHistory);
+        
+        res.json({ reply });
+    } catch (err) {
+        console.error('[Mock Interview Chat Error]:', err);
+        res.status(500).json({ error: 'Failed to generate reply.' });
+    }
+});
+
+// 3. Finish and Evaluate
+router.post('/mock-interview/evaluate', auth, async (req, res) => {
+    try {
+        const { jobRole, questionType, chatHistory } = req.body;
+        
+        if (!chatHistory || !Array.isArray(chatHistory)) {
+             return res.status(400).json({ error: 'Valid chatHistory array is required.' });
+        }
+
+        const evaluation = await analyzeInterviewPerformance(jobRole, questionType, chatHistory);
+        
+        res.json({ evaluation });
+    } catch (err) {
+        console.error('[Mock Interview Evaluate Error]:', err);
+        res.status(500).json({ error: 'Failed to evaluate interview.' });
+    }
+});
+

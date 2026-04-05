@@ -5,7 +5,8 @@ import { FiCode, FiClipboard, FiCheckSquare, FiHelpCircle } from 'react-icons/fi
 const Preparation = () => {
     const cards = [
         { to: '/student/preparation/mock-test', icon: '📝', title: 'Mock Tests', desc: 'Proctored AI-generated technical & aptitude tests', color: '#10b981' },
-        { to: '/student/preparation/tips', icon: '🤖', title: 'AI Interview Prep', desc: 'Simulate role-specific interviews with AI evaluation', color: '#f59e0b' },
+        { to: '/student/preparation/tips', icon: '🤖', title: 'Interview Resources', desc: 'Read AI generated tips and common questions', color: '#f59e0b' },
+        { to: '/student/preparation/ai-mock', icon: '🎤', title: 'Live AI Interview', desc: 'Interactive voice & text interview customized to your resume', color: '#3b82f6' },
     ];
 
     return (

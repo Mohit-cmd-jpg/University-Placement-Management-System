@@ -1194,6 +1194,86 @@ const calculateTestDuration = (questions) => {
     return Math.ceil(totalDuration / 5) * 5;
 };
 
+// ──────────────── AI Mock Interview System ──────────────────────
+const extractResumeForInterview = async (pdfBuffer) => {
+    try {
+        const text = await extractTextFromPDF(pdfBuffer);
+        const prompt = `You are an expert HR assistant. Extract the candidate's key skills, recent job titles, main projects, and overall technical background from the following resume text.
+Return ONLY a JSON object with the following structure:
+{
+  "skills": ["skill1", "skill2"],
+  "experience": ["role 1 at company A", "role 2"],
+  "projects": ["project 1", "project 2"],
+  "summary": "a short 2 sentence summary of their background"
+}
+
+Resume text:
+${text.substring(0, 15000)}`;
+
+        const response = await callAI([{ role: 'user', content: prompt }]);
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        return JSON.parse(response);
+    } catch (err) {
+        console.error('[AI] Resume extraction failed:', err);
+        throw new Error('Failed to analyze resume for interview.');
+    }
+};
+
+const generateInterviewReply = async (candidateProfile, jobRole, questionType, chatHistory) => {
+    try {
+        const systemPrompt = `You are a strict but fair interviewer for a ${jobRole} position. The interview focus is ${questionType}.
+Candidate background: ${JSON.stringify(candidateProfile)}.
+Conduct a realistic interview. Ask one concise question at a time. Do not give away the answer.
+Listen to their previous answer, provide a very brief acknowledgment (e.g. "Good.", "I see."), and ask the next logically related question.
+If it's the very first message from you, just introduce yourself briefly and ask the first question based on their background.
+Keep your response exactly what an interviewer would say out loud in conversation. Avoid markdown formatting like asterisks or bold text, just plain text ready for text-to-speech.`;
+
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            ...chatHistory
+        ];
+
+        const response = await callAI(messages, 0, 500);
+        return response.trim();
+    } catch (err) {
+        console.error('[AI] Interview reply failed:', err);
+        throw new Error('Failed to generate interview response.');
+    }
+};
+
+const analyzeInterviewPerformance = async (jobRole, questionType, chatHistory) => {
+    try {
+         const prompt = `You are a senior technical evaluator reviewing a candidate for a ${jobRole} role (${questionType} focus).
+Review the interview transcript and evaluate the candidate.
+Return ONLY a JSON object with the following structure:
+{
+    "score": 85,
+    "feedback": "Overall good, but struggled with XYZ. Good communication.",
+    "strengths": ["...", "..."],
+    "improvements": ["...", "..."]
+}`;
+
+         const transcriptText = chatHistory.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\\n");
+
+         const messages = [
+             { role: 'system', content: prompt },
+             { role: 'user', content: "Transcript:\\n" + transcriptText }
+         ];
+         const response = await callAI(messages, 0, 1000);
+         const jsonMatch = response.match(/\{[\s\S]*\}/);
+         if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+         }
+         return JSON.parse(response);
+    } catch (err) {
+         console.error('[AI] Interview evaluation failed:', err);
+         throw new Error('Failed to evaluate interview performance.');
+    }
+};
+
 module.exports = {
     // New API
     generateMockTest,
@@ -1206,6 +1286,9 @@ module.exports = {
     generateRecommendations,
     saveGeneratedQuestions,
     calculateTestDuration,
+    extractResumeForInterview,
+    generateInterviewReply,
+    analyzeInterviewPerformance,
     // Legacy aliases
     evaluateTestAnswers,
     evaluateCandidateForJob,

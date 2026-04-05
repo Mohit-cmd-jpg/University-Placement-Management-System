@@ -18,6 +18,7 @@ import StudentApplications from './pages/student/Applications';
 import Preparation from './pages/student/Preparation';
 import MockTest from './pages/student/MockTest';
 import InterviewTips from './pages/student/InterviewTips';
+import AIMockInterview from './pages/student/AIMockInterview';
 
 // Recruiter Pages
 import RecruiterDashboard from './pages/recruiter/Dashboard';
@@ -67,6 +68,7 @@ function App() {
             <Route path="/student/preparation" element={<ProtectedRoute roles={['student']}><Preparation /></ProtectedRoute>} />
             <Route path="/student/preparation/mock-test" element={<ProtectedRoute roles={['student']}><MockTest /></ProtectedRoute>} />
             <Route path="/student/preparation/tips" element={<ProtectedRoute roles={['student']}><InterviewTips /></ProtectedRoute>} />
+            <Route path="/student/preparation/ai-mock" element={<ProtectedRoute roles={['student']}><AIMockInterview /></ProtectedRoute>} />
             <Route path="/student/notifications" element={<ProtectedRoute roles={['student']}><Notifications /></ProtectedRoute>} />
 
             {/* Recruiter Routes */}
