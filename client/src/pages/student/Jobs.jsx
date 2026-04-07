@@ -10,7 +10,10 @@ const StudentJobs = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [jobs, setJobs] = useState([]);
+    const [externalJobs, setExternalJobs] = useState([]);
+    const [activeTab, setActiveTab] = useState('internal');
     const [loading, setLoading] = useState(true);
+    const [loadingExternal, setLoadingExternal] = useState(false);
     const [selectedJob, setSelectedJob] = useState(null);
     const [appliedJobs, setAppliedJobs] = useState([]);
     const [coverLetter, setCoverLetter] = useState('');
@@ -18,12 +21,30 @@ const StudentJobs = () => {
 
     useEffect(() => { loadData(); }, []);
 
+    useEffect(() => {
+        if (activeTab === 'external' && externalJobs.length === 0) {
+            loadExternalJobs();
+        }
+    }, [activeTab]);
+
     const loadData = async () => {
         try {
             const [jobsRes, appsRes] = await Promise.all([jobAPI.getAll(), applicationAPI.getMyApplications()]);
             setJobs(jobsRes.data);
             setAppliedJobs(appsRes.data.map(a => a.job?._id));
         } catch { } finally { setLoading(false); }
+    };
+
+    const loadExternalJobs = async () => {
+        setLoadingExternal(true);
+        try {
+            const res = await jobAPI.getExternalJobs();
+            setExternalJobs(res.data);
+        } catch (error) {
+            toast.error("Failed to fetch external jobs.");
+        } finally {
+            setLoadingExternal(false);
+        }
     };
 
     const getMissingProfileFields = () => {
@@ -74,7 +95,7 @@ const StudentJobs = () => {
     return (
         <Layout title="Job Listings">
             <div className="fade-in">
-                {!isEligibleToApply && (
+                {!isEligibleToApply && activeTab === 'internal' && (
                     <div className="card" style={{ marginBottom: '1rem', border: '1px solid #f59e0b', background: '#fffbeb' }}>
                         <p style={{ margin: 0, color: '#92400e', fontSize: '0.9rem' }}>
                             Complete required profile details before applying: <strong>{getMissingProfileFields().join(', ')}</strong>.
@@ -85,7 +106,25 @@ const StudentJobs = () => {
                     </div>
                 )}
 
-                <div className="jobs-grid" style={{
+                <div className="tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+                    <button 
+                        className={`tab ${activeTab === 'internal' ? 'active' : ''}`} 
+                        onClick={() => setActiveTab('internal')}
+                        style={{ padding: '0.75rem 1.5rem', borderBottom: activeTab === 'internal' ? '2px solid var(--primary)' : 'none', background: 'none', border: 'none', fontWeight: activeTab === 'internal' ? 600 : 400, color: activeTab === 'internal' ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer' }}
+                    >
+                        Campus Jobs
+                    </button>
+                    <button 
+                        className={`tab ${activeTab === 'external' ? 'active' : ''}`} 
+                        onClick={() => setActiveTab('external')}
+                        style={{ padding: '0.75rem 1.5rem', borderBottom: activeTab === 'external' ? '2px solid var(--primary)' : 'none', background: 'none', border: 'none', fontWeight: activeTab === 'external' ? 600 : 400, color: activeTab === 'external' ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer' }}
+                    >
+                        Global Jobs (Recommended)
+                    </button>
+                </div>
+
+                {activeTab === 'internal' ? (
+                    <div className="jobs-grid" style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(var(--mobile-job-min, 300px), 1fr))',
                     gap: '1.5rem'
@@ -141,6 +180,40 @@ const StudentJobs = () => {
                         ))
                     )}
                 </div>
+                ) : (
+                    <div className="jobs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(var(--mobile-job-min, 300px), 1fr))', gap: '1.5rem' }}>
+                        {loadingExternal ? (
+                            <div className="empty-state" style={{ gridColumn: '1 / -1' }}><div className="spinner"></div><p>Searching web for jobs matching your profile...</p></div>
+                        ) : externalJobs.length === 0 ? (
+                            <div className="empty-state" style={{ gridColumn: '1 / -1' }}><h3>No external jobs found</h3><p>Update your skills in the profile to see matches.</p></div>
+                        ) : (
+                            externalJobs.map((job) => (
+                                <div key={job.id} className="job-card hover-lift" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{job.title}</h3>
+                                        <p className="company" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '1rem' }}>{job.company}</p>
+                                        <div className="meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                            <span className="flex items-center gap-1"><FiMapPin /> {job.location || 'Remote'}</span>
+                                            <span className="flex items-center gap-1"><FiClock /> {job.type || 'Full-time'}</span>
+                                            {job.salary && <span className="flex items-center gap-1">💰 {job.salary}</span>}
+                                        </div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1rem' }}>
+                                            <span className="badge badge-secondary" style={{ fontSize: '0.65rem' }}>Source: {job.source}</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                            Posted: {new Date(job.postedAt).toLocaleDateString()}
+                                        </p>
+                                        <a href={job.applyUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'block', textAlign: 'center', width: '100%' }}>
+                                            Apply on {job.source.split(' ')[0]}
+                                        </a>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
             </div>
 
             {selectedJob && (

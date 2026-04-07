@@ -87,6 +87,7 @@ export const recruiterAPI = {
 // Jobs
 export const jobAPI = {
     getAll: () => api.get('/jobs'),
+    getExternalJobs: () => api.get('/jobs/external'),
     getById: (id) => api.get(`/jobs/${id}`),
     create: (data) => api.post('/jobs', data),
     createWithAttachment: (formData) => api.post('/jobs', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
