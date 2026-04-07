@@ -170,12 +170,24 @@ COMPLETE LIST OF ALL STUDENTS IN DATABASE:
 ${studentsList}
 
 GUIDELINES:
-1. YOU NOW HAVE FULL ACCESS TO ALL STUDENT NAMES, STATUSES, TOPICS, AND ROLES.
-2. If the admin asks "which topic students are weak the most", read the "UNIVERSITY TOPICS PERFORMANCE" above and explicitly state the topic with the lowest percentage.
-3. If they ask "which tech job students want the most", read the "MOST WANTED JOB ROLES" and explicitly state the jobs with the highest counts.
-4. If they ask about specific student names, read the "COMPLETE LIST OF ALL STUDENTS" and give them the exact names.
-5. NEVER say "I don't have access to specific data." You absolutely have it in the text above. Read it and answer precisely.
-6. Do NOT mention "database aggregation" or how you got the data. Act as a strategic advisor.
+1. You have access to some aggregate data above. If the admin asks questions like "which topic students are weak the most" or "which tech job students want the most", answer directly using the aggregate context provided.
+2. ⚠️ AUTONOMOUS DATABASE QUERY CAPABILITY ⚠️
+If the admin asks to "list all jobs", "show me job postings", "find jobs", or "list unplaced students", YOU MUST TRIGGER A DATABASE QUERY.
+To trigger a query, output EXACTLY THIS JSON FORMAT and NOTHING ELSE (no markdown, no backticks):
+{"_query": true, "collection": "Job", "query": {}}
+
+Available collections for queries:
+- "Job" (Fields: title, company, status, location, isActive) -> Use this for any question asking to list, show, or detail job postings!
+- "Application" (Fields: status) -> Use this to find who applied.
+
+Example Scenario:
+Admin: "list all job postings"
+Your First Output: {"_query": true, "collection": "Job", "query": {}}
+
+Admin: "show me all active jobs"
+Your First Output: {"_query": true, "collection": "Job", "query": {"isActive": true}}
+
+If a question can be answered by the aggregate stats, answer normally in text. IF IT REQUIRES LISTING JOBS/APPLICATIONS NOT SHOWN ABOVE, OUTPUT THE JSON QUERY.
 `;
         } else {
             return res.status(403).json({ error: 'AI Insights are currently available for students and admins only.' });
@@ -193,8 +205,46 @@ GUIDELINES:
             { role: 'user', content: message }
         ];
 
-        // 4. Call the LLM
-        const aiResponseText = await callAI(messages, 0, 1000); // 1000 max tokens
+        // 4. Call the LLM (First Pass)
+        let aiResponseText = await callAI(messages, 0, 1000); // 1000 max tokens
+
+        // 5. Handle agentic DB queries if triggered by the AI
+        try {
+            // If AI returned JSON proposing a query
+            let cleanText = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            if (cleanText.startsWith('{') && cleanText.includes('"_query"')) {
+                const aiQuery = JSON.parse(cleanText);
+                
+                if (aiQuery.collection) {
+                    console.log(`[AI] autonomous DB search on: ${aiQuery.collection}`, aiQuery.query);
+                    let dbResults = [];
+
+                    if (aiQuery.collection === 'Job') {
+                        const Job = require('../models/Job');
+                        dbResults = await Job.find(aiQuery.query || {}).select('title company type status openings location').limit(20).lean();
+                    } else if (aiQuery.collection === 'Application') {
+                        const Application = require('../models/Application');
+                        dbResults = await Application.find(aiQuery.query || {}).populate('job', 'title company').limit(20).lean();
+                    } else if (aiQuery.collection === 'User') {
+                        dbResults = await User.find({ role: 'student', ...(aiQuery.query || {}) }).select('name email studentProfile').limit(20).lean();
+                    }
+                    
+                    console.log(`[AI] Auto query returned ${dbResults.length} records`);
+
+                    // Inject the db results into the context and run AI AGAIN!
+                    messages.push({ role: 'assistant', content: aiResponseText });
+                    messages.push({ 
+                        role: 'system', 
+                        content: `Autonomous DB Engine returned these exact records:\n${JSON.stringify(dbResults)}\n\nRead this data perfectly and generate a final human-readable answer for the admin. If empty, tell them none were found. DO NOT OUTPUT JSON AGAIN.` 
+                    });
+
+                    // Second Pass
+                    aiResponseText = await callAI(messages, 0, 1500);
+                }
+            }
+        } catch (err) {
+            console.error('[AI] Autonomous query check failed:', err.message);
+        }
 
         res.json({ reply: aiResponseText });
 
