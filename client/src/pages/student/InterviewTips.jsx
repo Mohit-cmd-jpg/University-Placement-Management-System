@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { prepAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -33,7 +34,10 @@ const SafeMarkdown = ({ children, ...props }) => {
 };
 
 const InterviewTips = () => {
-    const [role, setRole] = useState('Software Engineer');
+    const location = useLocation();
+    const jobPrep = location.state?.jobPrep || null;
+
+    const [role, setRole] = useState(jobPrep ? `${jobPrep.title} at ${jobPrep.company}. Description: ${jobPrep.description ? jobPrep.description.substring(0, 150) + '...' : 'N/A'}. Skills: ${jobPrep.skills?.join(', ') || 'N/A'}` : 'Software Engineer');
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(null);

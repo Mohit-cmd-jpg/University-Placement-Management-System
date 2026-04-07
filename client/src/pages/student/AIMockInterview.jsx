@@ -113,7 +113,7 @@ const AIMockInterview = () => {
     const jobRoles = jobPrep ? [jobPrep.title, ...ObjectRoles.filter(r => r !== jobPrep.title)] : ObjectRoles;
 
     const [step, setStep] = useState('setup');
-    const [jobRole, setJobRole] = useState(jobPrep ? jobPrep.title : 'Software Engineer');
+    const [jobRole, setJobRole] = useState(jobPrep ? `${jobPrep.title} at ${jobPrep.company}` : 'Software Engineer');
     const [questionType, setQuestionType] = useState('technical');
     const [difficulty, setDifficulty] = useState('Medium');
     const [questionCount, setQuestionCount] = useState(8);
@@ -237,7 +237,7 @@ const AIMockInterview = () => {
                 }, 3000);
             } else {
                 const res = await api.post('/preparation/mock-interview/chat', {
-                    candidateProfile, jobRole, questionType, chatHistory: updatedChat, difficulty, questionCount
+                    candidateProfile, jobRole: getEnhancedJobRole(), questionType, chatHistory: updatedChat, difficulty, questionCount
                 });
                 setChatHistory([...updatedChat, { role: 'assistant', content: res.data.reply }]);
                 speakText(res.data.reply);
@@ -302,7 +302,13 @@ const AIMockInterview = () => {
         try { await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { toast.error('Microphone access required.'); return; }
         setIsLoading(true);
         const formData = new FormData();
-        formData.append('jobRole', jobRole); formData.append('questionType', questionType);
+        
+        let enhancedJobRole = jobRole;
+        if (jobPrep) {
+            enhancedJobRole = `${jobRole} | Job Description: ${jobPrep.description ? jobPrep.description.substring(0, 100) + '...' : 'N/A'} | Required Skills: ${jobPrep.skills?.join(', ') || 'N/A'}`;
+        }
+        
+        formData.append('jobRole', enhancedJobRole); formData.append('questionType', questionType);
         formData.append('difficulty', difficulty); formData.append('questionCount', questionCount);
         if (resume) formData.append('resume', resume);
         try {
@@ -315,6 +321,11 @@ const AIMockInterview = () => {
             speakText(res.data.initialReply);
         } catch (err) { toast.error(err.response?.data?.error || 'Failed to start.'); }
         finally { setIsLoading(false); }
+    };
+
+    const getEnhancedJobRole = () => {
+        if (!jobPrep) return jobRole;
+        return `${jobRole} | Job Description: ${jobPrep.description ? jobPrep.description.substring(0, 150) + '...' : 'N/A'} | Required Skills: ${jobPrep.skills?.join(', ') || 'N/A'}`;
     };
 
     const sendMessage = async (e) => {
@@ -367,7 +378,7 @@ const AIMockInterview = () => {
             console.warn('Exit fullscreen failed:', err);
         }
         try {
-            const res = await api.post('/preparation/mock-interview/evaluate', { jobRole, questionType, chatHistory, difficulty });
+            const res = await api.post('/preparation/mock-interview/evaluate', { jobRole: getEnhancedJobRole(), questionType, chatHistory, difficulty });
             setEvaluation(res.data.evaluation); setStep('evaluation');
         } catch { toast.error('Failed to generate evaluation.'); }
         finally { setIsLoading(false); }

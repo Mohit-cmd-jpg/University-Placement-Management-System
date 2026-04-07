@@ -214,9 +214,18 @@ const StudentJobs = () => {
                                                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                                                         Posted: {new Date(job.postedAt).toLocaleDateString()}
                                                     </p>
-                                                    <a href={job.applyUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'block', textAlign: 'center', width: '100%' }}>
-                                                        Apply on {job.source.split(' ')[0]}
-                                                    </a>
+                                                    <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
+                                                        <a href={job.applyUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'block', textAlign: 'center', width: '100%' }}>
+                                                            Apply on {job.source.split(' ')[0]}
+                                                        </a>
+                                                        <button 
+                                                            className="btn btn-secondary" 
+                                                            style={{ border: '1px solid var(--primary)', color: 'var(--primary)', width: '100%' }}
+                                                            onClick={() => navigate('/student/preparation', { state: { jobPrep: { title: job.title, company: job.company, description: job.description, skills: job.searchKeywords || [job.title] } } })}
+                                                        >
+                                                            🚀 Prepare for this Role
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}

@@ -36,7 +36,7 @@ const MockTest = () => {
 
     // AI Generator state
     const [generating, setGenerating] = useState(false);
-    const [aiTopic, setAiTopic] = useState(jobPrep ? `${jobPrep.title} at ${jobPrep.company} (Skills: ${jobPrep.skills?.join(', ') || 'N/A'}) Role Assessment` : '');
+    const [aiTopic, setAiTopic] = useState(jobPrep ? `${jobPrep.title} at ${jobPrep.company}. Description: ${jobPrep.description ? jobPrep.description.substring(0, 150) + '...' : 'N/A'}. Required Skills: ${jobPrep.skills?.join(', ') || 'N/A'}.` : '');
     const [aiDifficulty, setAiDifficulty] = useState('Medium');
     const [aiCount, setAiCount] = useState(5);
     const [aiQuestionType, setAiQuestionType] = useState('mix');
