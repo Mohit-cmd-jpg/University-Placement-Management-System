@@ -173,6 +173,7 @@ const StudentJobs = () => {
                                                 Apply
                                             </button>
                                         )}
+                                        <button className="btn btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); navigate('/student/preparation', { state: { jobPrep: { title: job.title, company: job.company, description: job.description, skills: job.eligibility?.skills || [job.title] } } }); }}>🚀 Prepare</button>
                                         <button className="btn btn-secondary btn-sm" onClick={() => setSelectedJob({ ...job, viewOnly: true })}>Details</button>
                                     </div>
                                 </div>
@@ -457,7 +458,7 @@ const StudentJobs = () => {
                                 <button 
                                     className="btn btn-primary" 
                                     style={{ background: 'var(--bg-card)', border: '1px solid var(--primary)', color: 'var(--primary)' }}
-                                    onClick={() => navigate('/student/preparation', { state: { jobPrep: selectedJob } })}
+                                    onClick={() => navigate('/student/preparation', { state: { jobPrep: { title: selectedJob.title, company: selectedJob.company, description: selectedJob.description, skills: selectedJob.eligibility?.skills || selectedJob.searchKeywords || [selectedJob.title] } } })}
                                 >
                                     🚀 Prepare for this Role
                                 </button>
