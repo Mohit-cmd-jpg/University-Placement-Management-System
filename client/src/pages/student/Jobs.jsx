@@ -181,36 +181,83 @@ const StudentJobs = () => {
                     )}
                 </div>
                 ) : (
-                    <div className="jobs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(var(--mobile-job-min, 300px), 1fr))', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                         {loadingExternal ? (
-                            <div className="empty-state" style={{ gridColumn: '1 / -1' }}><div className="spinner"></div><p>Searching web for jobs matching your profile...</p></div>
+                            <div className="empty-state"><div className="spinner"></div><p>Searching web for jobs matching your profile...</p></div>
                         ) : externalJobs.length === 0 ? (
-                            <div className="empty-state" style={{ gridColumn: '1 / -1' }}><h3>No external jobs found</h3><p>Update your skills in the profile to see matches.</p></div>
+                            <div className="empty-state"><h3>No external jobs found</h3><p>Update your skills in the profile to see matches.</p></div>
                         ) : (
-                            externalJobs.map((job) => (
-                                <div key={job.id} className="job-card hover-lift" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{job.title}</h3>
-                                        <p className="company" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '1rem' }}>{job.company}</p>
-                                        <div className="meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                            <span className="flex items-center gap-1"><FiMapPin /> {job.location || 'Remote'}</span>
-                                            <span className="flex items-center gap-1"><FiClock /> {job.type || 'Full-time'}</span>
-                                            {job.salary && <span className="flex items-center gap-1">💰 {job.salary}</span>}
-                                        </div>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1rem' }}>
-                                            <span className="badge badge-secondary" style={{ fontSize: '0.65rem' }}>Source: {job.source}</span>
-                                        </div>
-                                    </div>
-                                    <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                                            Posted: {new Date(job.postedAt).toLocaleDateString()}
-                                        </p>
-                                        <a href={job.applyUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'block', textAlign: 'center', width: '100%' }}>
-                                            Apply on {job.source.split(' ')[0]}
-                                        </a>
+                            <>
+                                {/* --- Jobs In India --- */}
+                                <div>
+                                    <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text)', borderBottom: '2px solid var(--border)', paddingBottom: '0.5rem' }}>
+                                        🇮🇳 Available in India
+                                    </h2>
+                                    <div className="jobs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(var(--mobile-job-min, 300px), 1fr))', gap: '1.5rem' }}>
+                                        {externalJobs.filter(j => j.isIndia).length === 0 ? (
+                                            <p style={{ color: 'var(--text-muted)' }}>No matches currently available in India.</p>
+                                        ) : externalJobs.filter(j => j.isIndia).map((job) => (
+                                            <div key={job.id} className="job-card hover-lift" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{job.title}</h3>
+                                                    <p className="company" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '1rem' }}>{job.company}</p>
+                                                    <div className="meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                        <span className="flex items-center gap-1"><FiMapPin /> {job.location || 'Remote'}</span>
+                                                        <span className="flex items-center gap-1"><FiClock /> {job.type || 'Full-time'}</span>
+                                                        {job.salary && <span className="flex items-center gap-1">💰 {job.salary}</span>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1rem' }}>
+                                                        <span className="badge badge-secondary" style={{ fontSize: '0.65rem' }}>Source: {job.source}</span>
+                                                    </div>
+                                                </div>
+                                                <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                                        Posted: {new Date(job.postedAt).toLocaleDateString()}
+                                                    </p>
+                                                    <a href={job.applyUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'block', textAlign: 'center', width: '100%' }}>
+                                                        Apply on {job.source.split(' ')[0]}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            ))
+
+                                {/* --- Global / Remote Jobs --- */}
+                                <div>
+                                    <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text)', borderBottom: '2px solid var(--border)', paddingBottom: '0.5rem' }}>
+                                        🌍 International & Remote
+                                    </h2>
+                                    <div className="jobs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(var(--mobile-job-min, 300px), 1fr))', gap: '1.5rem' }}>
+                                        {externalJobs.filter(j => !j.isIndia).length === 0 ? (
+                                            <p style={{ color: 'var(--text-muted)' }}>No international matches right now.</p>
+                                        ) : externalJobs.filter(j => !j.isIndia).map((job) => (
+                                            <div key={job.id} className="job-card hover-lift" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{job.title}</h3>
+                                                    <p className="company" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '1rem' }}>{job.company}</p>
+                                                    <div className="meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                        <span className="flex items-center gap-1"><FiMapPin /> {job.location || 'Remote'}</span>
+                                                        <span className="flex items-center gap-1"><FiClock /> {job.type || 'Full-time'}</span>
+                                                        {job.salary && <span className="flex items-center gap-1">💰 {job.salary}</span>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1rem' }}>
+                                                        <span className="badge badge-secondary" style={{ fontSize: '0.65rem' }}>Source: {job.source}</span>
+                                                    </div>
+                                                </div>
+                                                <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                                        Posted: {new Date(job.postedAt).toLocaleDateString()}
+                                                    </p>
+                                                    <a href={job.applyUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'block', textAlign: 'center', width: '100%' }}>
+                                                        Apply on {job.source.split(' ')[0]}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 )}

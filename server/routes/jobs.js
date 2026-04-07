@@ -6,6 +6,42 @@ const upload = require('../middleware/upload');
 const Job = require('../models/Job');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const ExternalJob = require('../models/ExternalJob');
+
+// Helper to save external jobs to cache in MongoDB
+async function cacheExternalJobs(jobsArray, searchKeywords) {
+    if (!jobsArray || jobsArray.length === 0) return;
+    try {
+        const ops = jobsArray.map(job => {
+            const locLow = (job.location || '').toLowerCase();
+            const isIndia = locLow.includes('india') || locLow.includes(', in') || locLow.includes('bengaluru') || locLow.includes('bangalore') || locLow.includes('delhi') || locLow.includes('mumbai') || locLow.includes('pune') || locLow.includes('hyderabad') || locLow.includes('chennai');
+            
+            return {
+                updateOne: {
+                    filter: { jobId: job.id },
+                    update: {
+                        $set: {
+                            title: job.title,
+                            company: job.company,
+                            location: job.location || 'Remote',
+                            type: job.type || 'Full-time',
+                            applyUrl: job.applyUrl,
+                            source: job.source,
+                            postedAt: job.postedAt || new Date(),
+                            salary: job.salary,
+                            isIndia: isIndia
+                        },
+                        $addToSet: { searchKeywords: { $each: searchKeywords } }
+                    },
+                    upsert: true
+                }
+            };
+        });
+        await ExternalJob.bulkWrite(ops, { ordered: false });
+    } catch (e) {
+        console.error("Error caching external jobs:", e.message);
+    }
+}
 
 // Get all approved jobs (for students)
 router.get('/', auth, async (req, res) => {
@@ -18,44 +54,44 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-// Get external jobs from public APIs and JSearch
+// Get external jobs from public APIs and JSearch (Cached to MongoDB)
 router.get('/external', auth, async (req, res) => {
     try {
-        // Build the search query from user skills
         let queryStr = 'Software Developer';
-        
         let skills = [];
-        // Assuming we need student's skills
-        // Let's fetch the full user context to be safe
+        
         const user = await User.findById(req.user._id);
         const profile = user?.studentProfile || {};
 
         if (Array.isArray(profile.skills) && profile.skills.length > 0) {
             skills = profile.skills.slice(0, 3);
-            queryStr = skills.join(' ');
         } else if (typeof profile.skills === 'string' && profile.skills.trim()) {
             skills = profile.skills.split(',').map(s => s.trim()).slice(0, 3);
-            queryStr = skills.join(' ');
         }
 
-        let allJobs = [];
+        if (skills.length > 0) {
+            queryStr = skills.join(' ');
+        } else {
+            skills = ['Software Developer']; // Fallback
+        }
+        
+        let fetchedJobs = [];
 
-        // 1. Array of RapidAPI keys (round-robin) handling 400 to 500 requests a month
+        // 1. Fetch from JSearch APIs (Explicitly seeking India jobs to satisfy requirement)
         const rapidApiKeys = [
             process.env.RAPIDAPI_KEY_1,
             process.env.RAPIDAPI_KEY_2,
             process.env.RAPIDAPI_KEY_3,
             process.env.RAPIDAPI_KEY_4,
             process.env.RAPIDAPI_KEY_5
-        ].filter(Boolean); // Only keep valid truthy keys
+        ].filter(Boolean);
 
         if (rapidApiKeys.length > 0) {
-            // Select key randomly to distribute load
             const randomKey = rapidApiKeys[Math.floor(Math.random() * rapidApiKeys.length)];
             const jsearchOptions = {
                 method: 'GET',
                 url: 'https://jsearch.p.rapidapi.com/search',
-                params: { query: queryStr, page: '1', num_pages: '1' },
+                params: { query: queryStr, page: '1', num_pages: '1', country: 'in' }, // Filter country = India
                 headers: {
                     'X-RapidAPI-Key': randomKey,
                     'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
@@ -76,20 +112,19 @@ router.get('/external', auth, async (req, res) => {
                         postedAt: j.job_posted_at_datetime_utc || new Date(),
                         salary: j.job_min_salary ? `$${j.job_min_salary} - $${j.job_max_salary}` : null
                     }));
-                    allJobs = [...allJobs, ...jobsFound];
+                    fetchedJobs = [...fetchedJobs, ...jobsFound];
                 }
             } catch(e) {
                 console.error("JSearch API error:", e.response?.data || e.message);
             }
         }
 
-        // 2. Fetch from Arbeitnow (Free, Europe/Remote tech jobs)
+        // 2. Fetch from Arbeitnow (Free, Global/Remote tech jobs)
         try {
             const arbeitRes = await axios.get('https://www.arbeitnow.com/api/job-board-api?page=1');
             if (arbeitRes.data && arbeitRes.data.data) {
                 let filteredArbeit = arbeitRes.data.data;
                
-                // Loose filter based on first skill if skills exist
                 if (skills.length > 0) {
                     filteredArbeit = arbeitRes.data.data.filter(j => {
                         const titleLower = j.title.toLowerCase();
@@ -98,8 +133,7 @@ router.get('/external', auth, async (req, res) => {
                     });
                 }
                 
-                // Keep the top 5-10
-                filteredArbeit = (filteredArbeit.length > 0 ? filteredArbeit : arbeitRes.data.data).slice(0, 10);
+                filteredArbeit = (filteredArbeit.length > 0 ? filteredArbeit : arbeitRes.data.data).slice(0, 8);
 
                 const formattedArbeit = filteredArbeit.map(j => ({
                     id: j.slug,
@@ -112,19 +146,19 @@ router.get('/external', auth, async (req, res) => {
                     postedAt: new Date(j.created_at * 1000).toISOString(),
                     salary: null
                 }));
-                allJobs = [...allJobs, ...formattedArbeit];
+                fetchedJobs = [...fetchedJobs, ...formattedArbeit];
             }
         } catch(e) {
             console.error("Arbeitnow API error:", e.message);
         }
 
-        // 3. Fetch from Remotive (Free, mostly Remote Programming jobs)
+        // 3. Fetch from Remotive (Free, mostly Global & Remote Programming jobs)
         try {
             const remotiveQuery = skills.length > 0 ? encodeURIComponent(skills[0]) : 'Software dev';
             const remotiveRes = await axios.get(`https://remotive.com/api/remote-jobs?search=${remotiveQuery}&limit=10`);
             
             if (remotiveRes.data && remotiveRes.data.jobs) {
-                const formattedRemotive = remotiveRes.data.jobs.slice(0, 10).map(j => ({
+                const formattedRemotive = remotiveRes.data.jobs.slice(0, 8).map(j => ({
                     id: String(j.id),
                     title: j.title,
                     company: j.company_name,
@@ -135,18 +169,17 @@ router.get('/external', auth, async (req, res) => {
                     postedAt: j.publication_date,
                     salary: j.salary || null
                 }));
-                allJobs = [...allJobs, ...formattedRemotive];
+                fetchedJobs = [...fetchedJobs, ...formattedRemotive];
             }
         } catch(e) {
             console.error("Remotive API error:", e.message);
         }
 
-        // 4. Fetch from GraphQL Jobs (Niche API focused on JS/GraphQL jobs)
+        // 4. Fetch from GraphQL Jobs (Global niche web dev)
         try {
             const gqlRes = await axios.get('https://graphql.jobs/api');
             if (gqlRes.data && Array.isArray(gqlRes.data)) {
-                // Just grab a few recent ones
-                const formattedGql = gqlRes.data.slice(0, 5).map(j => ({
+                const formattedGql = gqlRes.data.slice(0, 4).map(j => ({
                     id: j.id,
                     title: j.title,
                     company: j.company?.name || 'Unknown',
@@ -157,13 +190,48 @@ router.get('/external', auth, async (req, res) => {
                     postedAt: j.publishedAt || new Date(),
                     salary: null
                 }));
-                allJobs = [...allJobs, ...formattedGql];
+                fetchedJobs = [...fetchedJobs, ...formattedGql];
             }
         } catch(e) {
             console.error("GraphQL Jobs API error:", e.message);
         }
 
-        // Send combined jobs back, sorting by random or leave grouped by source
+        // --- CACHING & FETCHING FROM DB ---
+        // Save the newly fetched jobs into our MongoDB collection.
+        // It upserts them to prevent duplicates and links them to the current search keywords
+        if (fetchedJobs.length > 0) {
+            await cacheExternalJobs(fetchedJobs, skills);
+        }
+
+        // Now, regardless of whether the external APIs failed or succeeded,
+        // we pull the jobs mapping these skills directly from OUR MongoDB cache.
+        // This completely satisfies the cross-student sharing mechanism!
+        
+        // Build a regex pattern out of the skills to fuzzy search the DB
+        const matchRegexes = skills.map(skill => new RegExp(skill, 'i'));
+        
+        const cachedResults = await ExternalJob.find({
+            $or: [
+                { searchKeywords: { $in: skills } },
+                { title: { $in: matchRegexes } }
+            ]
+        }).sort({ postedAt: -1 }).limit(100);
+
+        // Normalize DB records back to frontend format
+        let allJobs = cachedResults.map(j => ({
+            id: j.jobId,
+            title: j.title,
+            company: j.company,
+            location: j.location,
+            type: j.type,
+            applyUrl: j.applyUrl,
+            source: j.source,
+            postedAt: j.postedAt,
+            salary: j.salary,
+            isIndia: j.isIndia // New field added for frontend sections!
+        }));
+
+        // Shuffle securely to make results dynamic
         allJobs = allJobs.sort(() => 0.5 - Math.random());
         res.json(allJobs);
         
