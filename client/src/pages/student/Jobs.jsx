@@ -191,7 +191,7 @@ const StudentJobs = () => {
                                 {/* --- Jobs In India --- */}
                                 <div>
                                     <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text)', borderBottom: '2px solid var(--border)', paddingBottom: '0.5rem' }}>
-                                        🇮🇳 Available in India
+                                        🇮🇳 Available to Apply from India (Local & Global Remote)
                                     </h2>
                                     <div className="jobs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(var(--mobile-job-min, 300px), 1fr))', gap: '1.5rem' }}>
                                         {externalJobs.filter(j => j.isIndia).length === 0 ? (
@@ -226,7 +226,7 @@ const StudentJobs = () => {
                                 {/* --- Global / Remote Jobs --- */}
                                 <div>
                                     <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text)', borderBottom: '2px solid var(--border)', paddingBottom: '0.5rem' }}>
-                                        🌍 International & Remote
+                                        🌍 Restricted Location (Outside India / Visa Needed)
                                     </h2>
                                     <div className="jobs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(var(--mobile-job-min, 300px), 1fr))', gap: '1.5rem' }}>
                                         {externalJobs.filter(j => !j.isIndia).length === 0 ? (

@@ -14,7 +14,16 @@ async function cacheExternalJobs(jobsArray, searchKeywords) {
     try {
         const ops = jobsArray.map(job => {
             const locLow = (job.location || '').toLowerCase();
-            const isIndia = locLow.includes('india') || locLow.includes(', in') || locLow.includes('bengaluru') || locLow.includes('bangalore') || locLow.includes('delhi') || locLow.includes('mumbai') || locLow.includes('pune') || locLow.includes('hyderabad') || locLow.includes('chennai');
+            const isLocalIndia = locLow.includes('india') || locLow.includes(', in') || 
+                locLow.includes('bengaluru') || locLow.includes('bangalore') || 
+                locLow.includes('delhi') || locLow.includes('mumbai') || 
+                locLow.includes('pune') || locLow.includes('hyderabad') || 
+                locLow.includes('chennai') || locLow.includes('noida') || 
+                locLow.includes('gurgaon') || locLow.includes('gurugram');
+                
+            const isGlobalRemote = locLow.includes('global') || locLow.includes('anywhere') || locLow.includes('worldwide');
+            
+            const isIndia = isLocalIndia || isGlobalRemote;
             
             return {
                 updateOne: {
@@ -77,7 +86,7 @@ router.get('/external', auth, async (req, res) => {
         
         let fetchedJobs = [];
 
-        // 1. Fetch from JSearch APIs (Explicitly seeking India jobs to satisfy requirement)
+        // 1. Fetch from JSearch APIs (Removed restricting 'in' country so it finds jobs properly)
         const rapidApiKeys = [
             process.env.RAPIDAPI_KEY_1,
             process.env.RAPIDAPI_KEY_2,
@@ -91,7 +100,7 @@ router.get('/external', auth, async (req, res) => {
             const jsearchOptions = {
                 method: 'GET',
                 url: 'https://jsearch.p.rapidapi.com/search',
-                params: { query: queryStr, page: '1', num_pages: '1', country: 'in' }, // Filter country = India
+                params: { query: queryStr, page: '1', num_pages: '1' }, // Generic query, lets JSearch find what it finds best
                 headers: {
                     'X-RapidAPI-Key': randomKey,
                     'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
@@ -155,10 +164,26 @@ router.get('/external', auth, async (req, res) => {
         // 3. Fetch from Remotive (Free, mostly Global & Remote Programming jobs)
         try {
             const remotiveQuery = skills.length > 0 ? encodeURIComponent(skills[0]) : 'Software dev';
+            
+            // Standard query
             const remotiveRes = await axios.get(`https://remotive.com/api/remote-jobs?search=${remotiveQuery}&limit=10`);
             
+            // Extra: Forces Indian/Global Remote jobs to be populated in cache
+            let remotiveIndiaRes = { data: { jobs: [] } };
+            try {
+                remotiveIndiaRes = await axios.get(`https://remotive.com/api/remote-jobs?category=software-dev&search=India&limit=5`);
+            } catch (err) {}
+            
+            let combinedRemotiveJobs = [];
             if (remotiveRes.data && remotiveRes.data.jobs) {
-                const formattedRemotive = remotiveRes.data.jobs.slice(0, 8).map(j => ({
+                combinedRemotiveJobs = [...combinedRemotiveJobs, ...remotiveRes.data.jobs.slice(0, 8)];
+            }
+            if (remotiveIndiaRes.data && remotiveIndiaRes.data.jobs) {
+                combinedRemotiveJobs = [...combinedRemotiveJobs, ...remotiveIndiaRes.data.jobs];
+            }
+
+            if (combinedRemotiveJobs.length > 0) {
+                const formattedRemotive = combinedRemotiveJobs.map(j => ({
                     id: String(j.id),
                     title: j.title,
                     company: j.company_name,
