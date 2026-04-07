@@ -177,15 +177,19 @@ To trigger a query, output EXACTLY THIS JSON FORMAT and NOTHING ELSE (no markdow
 {"_query": true, "collection": "Job", "query": {}}
 
 Available collections for queries:
-- "Job" (Fields: title, company, status, location, isActive) -> Use this for any question asking to list, show, or detail job postings!
-- "Application" (Fields: status) -> Use this to find who applied.
+- "Job": Use this for any question asking to list, show, or detail job postings.
+  - Fields available for querying: isActive (boolean), status (string: 'pending', 'approved', 'rejected'), type (string: 'Full-time', 'Internship', etc.), company (string).
+  - IMPORTANT: If they ask for jobs "waiting for approval", query for "status": "pending". If they ask for "approved jobs", query for "status": "approved".
+- "Application": Use this to find who applied.
+  - Fields: status (string: 'applied', 'shortlisted', 'interview', 'selected', 'rejected').
+- "User": Use this to list students or find specific ones.
 
 Example Scenario:
 Admin: "list all job postings"
 Your First Output: {"_query": true, "collection": "Job", "query": {}}
 
-Admin: "show me all active jobs"
-Your First Output: {"_query": true, "collection": "Job", "query": {"isActive": true}}
+Admin: "give me jobs waiting for approvals"
+Your First Output: {"_query": true, "collection": "Job", "query": {"status": "pending"}}
 
 If a question can be answered by the aggregate stats, answer normally in text. IF IT REQUIRES LISTING JOBS/APPLICATIONS NOT SHOWN ABOVE, OUTPUT THE JSON QUERY.
 `;
