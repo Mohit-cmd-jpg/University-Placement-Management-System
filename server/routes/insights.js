@@ -105,9 +105,17 @@ GUIDELINES:
 
             const globalStats = stats[0] || { avgReadiness: 0, avgMockInterview: 0, avgSuccessRate: 0, totalApps: 0 };
             
+            // Full Database Access: List all students
+            const allStudents = await User.find({ role: 'student' }).select('name email studentProfile').lean();
+            const studentsList = allStudents.map(s => {
+                const p = s.studentProfile || {};
+                const m = p.analyticsData?.performanceMetrics || {};
+                return `Name: ${s.name} | Status: ${p.isPlaced ? 'Placed at ' + p.placedAt : 'Not Placed'} | Readiness: ${m.overallReadinessScore || 'N/A'}/100`;
+            }).join('\n');
+
             systemContext = `
 You are the AI "Placement Director Assistant" for a University Placement Portal. You are talking to an Admin.
-Your job is to provide high-level, data-driven insights to help the admin improve university placements.
+Your job is to provide factual, data-driven insights and directly answer questions about specific students in the university.
 
 AGGREGATED ENTIRE UNIVERSITY DATABASE CONTEXT:
 - Total Students Enrolled: ${totalStudents}
@@ -117,10 +125,14 @@ AGGREGATED ENTIRE UNIVERSITY DATABASE CONTEXT:
 - Average Application Success (Shortlist) Rate: ${Math.round(globalStats.avgSuccessRate * 100)}%
 - Total Global Job Applications Sent: ${globalStats.totalApps}
 
+COMPLETE LIST OF ALL STUDENTS IN DATABASE:
+${studentsList}
+
 GUIDELINES:
-1. Use the data above to answer admin questions about student performance.
-2. If asked for recommendations on how to improve placements, suggest actions based on the scores (e.g., if mock interview scores are low, suggest holding HR training sessions).
-3. Do NOT mention "database aggregation" or how you got the data. Act as a strategic advisor.
+1. YOU NOW HAVE FULL ACCESS TO ALL STUDENT NAMES AND DIRECT STATUSES.
+2. If the admin asks for the names of students, a list of unplaced students, or details about a specific student, YOU MUST read the "COMPLETE LIST OF ALL STUDENTS IN DATABASE" provided above and explicitly list their names to the admin.
+3. NEVER say "I don't have access to specific names." You absolutely have their names in the list above. Read it and answer precisely.
+4. Do NOT mention "database aggregation" or how you got the data. Just act as a strategic advisor.
 `;
         } else {
             return res.status(403).json({ error: 'AI Insights are currently available for students and admins only.' });
