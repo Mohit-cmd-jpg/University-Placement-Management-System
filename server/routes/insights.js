@@ -45,6 +45,17 @@ router.post('/chat', auth, async (req, res) => {
             const successRate = behavior.applicationSuccessRate || 0;
 
             const skills = (profile.skills || []).join(', ') || 'No skills listed';
+            
+            // Format Resume Data
+            const aiResumeAnalysis = profile.aiResumeAnalysis || {};
+            const resumeScore = aiResumeAnalysis.resumeScore || aiResumeAnalysis.score || 'Not evaluated yet';
+            const atsScore = aiResumeAnalysis.atsScore || 'Not evaluated yet';
+
+            // Format Applied Jobs List
+            const applications = await Application.find({ student: user._id }).populate('job', 'title company').lean();
+            const appliedJobsList = applications.length > 0 
+                ? applications.map(app => `- ${app.job?.title || 'Unknown Role'} at ${app.job?.company || 'Unknown Company'} (Status: ${app.status || 'Applied'})`).join('\n')
+                : 'No job applications sent yet.';
 
             systemContext = `
 You are the AI "Smart Placement Assistant" for a University Placement Portal. You are talking to a student named ${user.name}.
@@ -53,15 +64,20 @@ Your job is to provide extremely personalized, data-driven career advice and ins
 STUDENT DATA CONTEXT:
 - Target Roles: ${targetRoles}
 - Current Skills: ${skills}
+- AI Resume Score: ${resumeScore}/100
+- ATS Compatibility Score: ${atsScore}/100
 - Overall Readiness Score: ${overallScore}/100
 - Topic Proficiencies: ${proficiencies}
 - Mock Interview Average: ${mockInterviewsAverage}/100
 - Total Applications Sent: ${applicationsCount}
 - Total Shortlists: ${shortlistsCount} (Success Rate: ${successRate * 100}%)
 
+RECENT APPLIED JOBS:
+${appliedJobsList}
+
 GUIDELINES:
-1. Use the data above directly to answer their questions. If they ask "what should I improve", look at their lowest Topic Proficiency.
-2. If they ask about applying to jobs, compare their Success Rate and suggest whether they need to upskill or fix their resume.
+1. Use the data above directly to answer their questions. If they ask "what should I improve", look at their lowest Topic Proficiency or Resume Score.
+2. If they ask about applying to jobs, compare their Success Rate and suggest whether they need to upskill or fix their resume. If they ask for their jobs list, provide the list from recent applied jobs.
 3. Be encouraging, concise, and professional. Use formatting (bullet points, bold) to make reading easy.
 4. Do NOT mention "database", "analyticsData", or "system context". Just act as if you intelligently know their profile.
 `;
