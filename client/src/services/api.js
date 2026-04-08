@@ -138,6 +138,7 @@ export const adminAPI = {
     sendAdminSectionOTP: () => api.post('/admin/admin-section-otp/send'),
     verifyAdminSectionOTP: (otp) => api.post('/admin/admin-section-otp/verify', { otp }),
     checkAdminSectionAccess: () => api.get('/admin/admin-section/check-access'),
+    importWhatsAppJob: (data) => api.post('/jobs/import-whatsapp', data),
 };
 
 // Notifications

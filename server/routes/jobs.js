@@ -7,6 +7,7 @@ const Job = require('../models/Job');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const ExternalJob = require('../models/ExternalJob');
+const aiService = require('../services/aiService');
 
 // Helper to save external jobs to cache in MongoDB
 async function cacheExternalJobs(jobsArray, searchKeywords) {
@@ -303,6 +304,41 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
+// Import job from WhatsApp string (admin/recruiter)
+router.post('/import-whatsapp', auth, authorize('admin', 'recruiter'), async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text) return res.status(400).json({ error: 'Text is required' });
+
+        const extractedData = await aiService.extractJobFromWhatsApp(text);
+        
+        let dDate = extractedData.deadline ? new Date(extractedData.deadline) : new Date();
+        if (isNaN(dDate.getTime())) {
+            dDate = new Date();
+            dDate.setDate(dDate.getDate() + 14);
+        }
+
+        const jobData = { 
+            ...extractedData, 
+            postedBy: req.user._id, 
+            status: 'pending',
+            source: 'WhatsApp',
+            company: extractedData.company || 'Unknown Company',
+            title: extractedData.title || 'Unknown Title',
+            description: extractedData.description || text,
+            deadline: dDate,
+            location: extractedData.location || 'Remote'
+        };
+        
+        const job = new Job(jobData);
+        await job.save();
+        res.status(201).json(job);
+    } catch (error) {
+        console.error('Import Error:', error);
+        res.status(400).json({ error: error.message || 'Failed to extract and save job' });
+    }
+});
+
 // Create job posting (recruiter)
 router.post('/', auth, authorize('recruiter'), upload.single('attachment'), async (req, res) => {
     try {
@@ -371,6 +407,141 @@ router.get('/recruiter/my-jobs', auth, authorize('recruiter'), async (req, res) 
         res.json(jobs);
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ==================== WhatsApp Cloud API Integration ====================
+
+// 1. Webhook Verification (Required by Meta/WhatsApp API to set up the connection)
+router.get('/webhook/whatsapp', (req, res) => {
+    const verify_token = process.env.WHATSAPP_VERIFY_TOKEN || 'my_super_secret_university_token';
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+
+    if (mode && token) {
+        if (mode === 'subscribe' && token === verify_token) {
+            console.log('WEBHOOK_VERIFIED');
+            res.status(200).send(challenge);
+        } else {
+            res.sendStatus(403);
+        }
+    } else {
+        res.sendStatus(400);
+    }
+});
+
+// 2. Receive Incoming Messages from WhatsApp
+router.post('/webhook/whatsapp', async (req, res) => {
+    try {
+        const body = req.body;
+
+        // Check if this is an event from the WhatsApp API
+        if (body.object === 'whatsapp_business_account') {
+            
+            // Return a 200 OK immediately to WhatsApp (prevents retries/timeouts)
+            res.status(200).send('EVENT_RECEIVED');
+
+            if (body.entry && body.entry[0].changes && body.entry[0].changes[0] && 
+                body.entry[0].changes[0].value.messages && body.entry[0].changes[0].value.messages[0]) {
+                
+                const message = body.entry[0].changes[0].value.messages[0];
+                
+                // Only process text messages
+                if (message.type === 'text') {
+                    const text = message.text.body;
+                    
+                    // Run the import async in the background
+                    // Ensure we have an admin user to assign the job to
+                    const adminUser = await User.findOne({ role: 'admin' });
+                    if (!adminUser) {
+                        console.error('No admin user found to assign the webhook job');
+                        return;
+                    }
+
+                    console.log('[WhatsApp Webhook] Processing incoming job text...');
+                    const extractedData = await aiService.extractJobFromWhatsApp(text);
+                    
+                    let dDate = extractedData.deadline ? new Date(extractedData.deadline) : new Date();
+                    if (isNaN(dDate.getTime())) {
+                        dDate = new Date();
+                        dDate.setDate(dDate.getDate() + 14); // Default to 2 weeks
+                    }
+
+                    const jobData = { 
+                        ...extractedData, 
+                        postedBy: adminUser._id, 
+                        status: 'pending',
+                        source: 'WhatsApp',
+                        company: extractedData.company || 'Unknown Company',
+                        title: extractedData.title || 'Unknown Title',
+                        description: extractedData.description || text,
+                        deadline: dDate,
+                        location: extractedData.location || 'Remote'
+                    };
+                    
+                    const job = new Job(jobData);
+                    await job.save();
+                    console.log('[WhatsApp Webhook] Job saved to pending queue successfully!');
+                }
+            }
+        } else {
+            // Not a WhatsApp API event
+            res.sendStatus(404);
+        }
+    } catch (error) {
+        console.error('[WhatsApp Webhook] Import Error:', error.message);
+        // Error handling normally omitted in webhooks since we already sent 200 OK
+    }
+});
+
+// ==================== Twilio WhatsApp Sandbox ====================
+// A much simpler alternative to the official Meta Cloud API. 
+// Go to twilio.com/console -> Messaging -> Try it out -> Send a WhatsApp Message
+// Connect your number to the Sandbox, then set the Webhook URL to: /api/jobs/webhook/twilio
+router.post('/webhook/twilio', async (req, res) => {
+    try {
+        const text = req.body.Body; // Twilio sends the message body here
+        
+        if (!text) {
+            return res.status(200).send('<Response></Response>'); 
+        }
+        
+        const adminUser = await User.findOne({ role: 'admin' });
+        if (!adminUser) return res.status(200).send('<Response></Response>');
+
+        console.log('[Twilio Webhook] Processing incoming job text...');
+        const extractedData = await aiService.extractJobFromWhatsApp(text);
+        
+        let dDate = extractedData.deadline ? new Date(extractedData.deadline) : new Date();
+        if (isNaN(dDate.getTime())) {
+            dDate = new Date();
+            dDate.setDate(dDate.getDate() + 14);
+        }
+
+        const jobData = { 
+            ...extractedData, 
+            postedBy: adminUser._id, 
+            status: 'pending',
+            source: 'WhatsApp (Twilio)',
+            company: extractedData.company || 'Unknown Company',
+            title: extractedData.title || 'Unknown Title',
+            description: extractedData.description || text,
+            deadline: dDate,
+            location: extractedData.location || 'Remote'
+        };
+        
+        const job = new Job(jobData);
+        await job.save();
+        console.log('[Twilio Webhook] Job saved to pending queue successfully!');
+        
+        // Respond to Twilio so it knows the webhook was received
+        res.set('Content-Type', 'text/xml');
+        res.status(200).send('<Response></Response>');
+    } catch (error) {
+        console.error('[Twilio Webhook] Import Error:', error.message);
+        res.set('Content-Type', 'text/xml');
+        res.status(200).send('<Response></Response>');
     }
 });
 

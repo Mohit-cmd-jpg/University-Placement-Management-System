@@ -1431,9 +1431,48 @@ Return ONLY valid JSON with this EXACT structure:
     }
 };
 
+// ==================== WhatsApp Job Extraction ====================
+const extractJobFromWhatsApp = async (text) => {
+    console.log('[AI] Extracting job from WhatsApp text...');
+    const systemPrompt = `You are a strict data extraction AI for a University Placement Portal.
+Extract structured job details from the following unstructured WhatsApp/Telegram message.
+Always return ONLY valid, parseable JSON. Do not include markdown formatting or extra text.
+Extract the following fields (provide reasonable defaults if missing based on context, e.g., location="Remote" if unspecified and "work from home" is mentioned):
+{
+  "title": "String (Job Role/Title)",
+  "company": "String",
+  "description": "String (Full description compiled from the text)",
+  "location": "String (or 'Remote')",
+  "type": "String (must be one of: 'Full-time', 'Part-time', 'Internship', 'Contract', default to 'Full-time' if unclear)",
+  "salary": "String (e.g. '10 LPA', 'Unpaid', etc. Default: 'Not specified')",
+  "openings": 1,
+  "deadline": "ISO-8601 Date String (if not found, guess a date 1-2 weeks from today, use format YYYY-MM-DD)",
+  "eligibility": {
+    "minCGPA": 0,
+    "branches": ["String"],
+    "skills": ["String"],
+    "batch": "String"
+  },
+  "requirements": ["String"],
+  "responsibilities": ["String"],
+  "perks": ["String"]
+}
+`;
+    try {
+        const responseText = await callAIWithRetry([{ role: 'system', content: systemPrompt }, { role: 'user', content: text }]);
+        let cleaned = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const json = JSON.parse(cleaned);
+        return json;
+    } catch (error) {
+        console.error('[AI] Job extraction failed:', error.message);
+        throw new Error('Failed to extract job details from text.');
+    }
+};
+
 module.exports = {
     // Generic API
     callAI,
+    extractJobFromWhatsApp,
     // New API
     generateMockTest,
     evaluateTestAnswer,

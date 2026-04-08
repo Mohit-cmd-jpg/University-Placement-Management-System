@@ -10,6 +10,9 @@ const AdminJobs = () => {
     const [tab, setTab] = useState('pending');
     const [loading, setLoading] = useState(true);
     const [selectedJob, setSelectedJob] = useState(null);
+    const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+    const [whatsappText, setWhatsappText] = useState('');
+    const [importing, setImporting] = useState(false);
 
     useEffect(() => { loadJobs(); }, []);
 
@@ -26,6 +29,22 @@ const AdminJobs = () => {
         } catch { toast.error('Error updating status'); }
     };
 
+    const handleImportWhatsApp = async () => {
+        if (!whatsappText.trim()) return toast.error('Please enter WhatsApp text');
+        setImporting(true);
+        try {
+            await adminAPI.importWhatsAppJob({ text: whatsappText });
+            toast.success('Job imported successfully');
+            setShowWhatsAppModal(false);
+            setWhatsappText('');
+            loadJobs();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to import job');
+        } finally {
+            setImporting(false);
+        }
+    };
+
     const filtered = tab === 'all' ? jobs : jobs.filter(j => j.status === tab);
 
     if (loading) return <Layout title="Job Approvals"><div className="loading"><div className="spinner"></div></div></Layout>;
@@ -33,19 +52,22 @@ const AdminJobs = () => {
     return (
         <Layout title="Job Approvals">
             <div className="fade-in">
-                <div className="tabs" style={{
-                    display: 'flex',
-                    overflowX: 'auto',
-                    whiteSpace: 'nowrap',
-                    paddingBottom: '0.5rem',
-                    marginBottom: '1.5rem',
-                    gap: '0.5rem'
-                }}>
-                    {['pending', 'approved', 'rejected', 'all'].map(t => (
-                        <div key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)} style={{ flex: '1', textAlign: 'center', minWidth: '100px' }}>
-                            {t.charAt(0).toUpperCase() + t.slice(1)} {t !== 'all' && `(${jobs.filter(j => j.status === t).length})`}
-                        </div>
-                    ))}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div className="tabs" style={{
+                        display: 'flex',
+                        overflowX: 'auto',
+                        whiteSpace: 'nowrap',
+                        gap: '0.5rem'
+                    }}>
+                        {['pending', 'approved', 'rejected', 'all'].map(t => (
+                            <div key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)} style={{ flex: '1', textAlign: 'center', minWidth: '100px' }}>
+                                {t.charAt(0).toUpperCase() + t.slice(1)} {t !== 'all' && `(${jobs.filter(j => j.status === t).length})`}
+                            </div>
+                        ))}
+                    </div>
+                    <button className="btn btn-primary" onClick={() => setShowWhatsAppModal(true)} style={{ whiteSpace: 'nowrap' }}>
+                        Import from WhatsApp
+                    </button>
                 </div>
 
                 {filtered.length === 0 ? (
@@ -253,6 +275,33 @@ const AdminJobs = () => {
                                 </>
                             )}
                             <button className="btn btn-secondary w-full" style={{ width: selectedJob.status !== 'pending' ? '100%' : 'auto' }} onClick={() => setSelectedJob(null)}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* WhatsApp Import Modal */}
+            {showWhatsAppModal && (
+                <div className="modal-overlay" onClick={() => !importing && setShowWhatsAppModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <h2 style={{ marginBottom: '1rem' }}>Import from WhatsApp</h2>
+                        <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Raw WhatsApp Message</label>
+                            <textarea 
+                                className="input" 
+                                rows="10" 
+                                value={whatsappText} 
+                                onChange={(e) => setWhatsappText(e.target.value)}
+                                placeholder="Paste the WhatsApp job description here..."
+                                disabled={importing}
+                                style={{ marginTop: '0.5rem', width: '100%', resize: 'vertical' }}
+                            ></textarea>
+                        </div>
+                        <div className="flex gap-1" style={{ justifyContent: 'flex-end' }}>
+                            <button className="btn btn-secondary" onClick={() => setShowWhatsAppModal(false)} disabled={importing}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleImportWhatsApp} disabled={importing}>
+                                {importing ? 'Importing...' : 'Import Job'}
+                            </button>
                         </div>
                     </div>
                 </div>
