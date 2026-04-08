@@ -28,14 +28,6 @@ const AIChat = () => {
     }, [messages]);
 
     useEffect(() => {
-    AI Agent
-    Hello Admin Mohit. I'm your AI Director. Ask me for data-driven insights about university placements, student averages, and performance metrics.
-    You
-    give me the list of all the students
-    AI Agent
-    {"_query": true, "collection": "User", "query": {}}
-    
-    
         if (user?.role === 'admin') {
             setMessages([
                 {
