@@ -219,6 +219,15 @@ If a question can be answered by the aggregate stats, answer normally in text. I
         try {
             // If AI returned JSON proposing a query
             let cleanText = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            
+            // Extract JSON if it's mixed with text
+            const firstBracket = cleanText.indexOf('{');
+            const lastBracket = cleanText.lastIndexOf('}');
+            
+            if (firstBracket !== -1 && lastBracket !== -1 && cleanText.includes('"_query"')) {
+                cleanText = cleanText.substring(firstBracket, lastBracket + 1);
+            }
+
             if (cleanText.startsWith('{') && cleanText.includes('"_query"')) {
                 const aiQuery = JSON.parse(cleanText);
                 
@@ -233,7 +242,7 @@ If a question can be answered by the aggregate stats, answer normally in text. I
                         const Application = require('../models/Application');
                         dbResults = await Application.find(aiQuery.query || {}).populate('job', 'title company').limit(20).lean();
                     } else if (aiQuery.collection === 'User') {
-                        dbResults = await User.find({ role: 'student', ...(aiQuery.query || {}) }).select('name email studentProfile').limit(20).lean();
+                        dbResults = await User.find({ role: 'student', ...(typeof aiQuery.query === 'object' ? aiQuery.query : {}) }).select('name email studentProfile.isPlaced').limit(30).lean();
                     }
                     
                     console.log(`[AI] Auto query returned ${dbResults.length} records`);
@@ -242,15 +251,17 @@ If a question can be answered by the aggregate stats, answer normally in text. I
                     messages.push({ role: 'assistant', content: aiResponseText });
                     messages.push({ 
                         role: 'system', 
-                        content: `Autonomous DB Engine returned these exact records:\n${JSON.stringify(dbResults)}\n\nRead this data perfectly and generate a final human-readable answer for the admin. If empty, tell them none were found. DO NOT OUTPUT JSON AGAIN.` 
+                        content: `Autonomous DB Engine returned these exact records:\n${JSON.stringify(dbResults)}\n\nRead this data PERFECTLY and generate a final human-readable response for the user. Summarize or list them gracefully. DO NOT OUTPUT JSON.` 
                     });
 
                     // Second Pass
-                    aiResponseText = await callAI(messages, 0, 1500);
+                    const finalResponse = await callAI(messages, 0, 1500);
+                    return res.json({ reply: finalResponse });
                 }
             }
         } catch (err) {
-            console.error('[AI] Autonomous query check failed:', err.message);
+            console.error('[AI] Autonomous query processing failed:', err);
+            return res.json({ reply: "I attempted to fetch that data from the database, but encountered an error processing the results. " + (aiResponseText.includes('_query') ? '' : aiResponseText) });
         }
 
         res.json({ reply: aiResponseText });
