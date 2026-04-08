@@ -92,12 +92,17 @@
 ### For Students 🎓
 - **📊 Personalized Dashboard**: Real-time tracking of applications and upcoming placement drives.
 - **🔍 Smart Job Finder**: Advanced filtering and eligibility checks for job roles.
+- **🌍 Global Job Search**: Find and apply to external opportunities worldwide across multiple platforms.
 - **📄 Resume Upload + ATS Analysis**: AI-powered scoring with criteria-wise breakdown and targeted resume improvements.
 - **💡 AI Preparation Hub**:
   - **Structured DSA Roadmap**: A curated 8-week guide for coding excellence.
   - **Practice Portals**: Topic-wise coding challenges and theoretical concepts.
   - **AI Mock Tests**: Timed assessments with instant feedback.
     - **AI Mock Interviews**: Immersive full-screen voice/chat interviews featuring strict adaptive scoring, customized questions strictly derived from your uploaded resume, and real-time feedback.
+- **🎯 Prepare for Job Feature**: Tailored preparation plans, coding challenges, and mock interview content mapped specifically to the requirements of the job profile applied for.
+- **🤖 Generative RAG AI Assistant**: An intelligent, context-aware chatbot available in the portal to proactively answer queries based on university policies and application statuses.
+
+### For Recruiters 🏢
 - **💼 Job Lifecycle Management**: Post roles, define eligibility, and track applications.
 - **📄 Applicant Tracking System (ATS)**: Streamlined student profile reviews and resume management.
 - **⚡ Status Management**: Instant Shortlist/Reject/Select actions for candidates.
@@ -105,6 +110,7 @@
 
 ### For Administrators (TPO) 📊
 - **✅ Verification System**: Profile and job posting approval workflows.
+- **🤖 Generative RAG AI Assistant**: A dedicated AI assistant powered by Retrieval-Augmented Generation to provide instant insights, policy details, and query resolution.
 - **📢 Broadcaster**: Schedule drives and broadcast announcements to the entire student body.
 - **📈 Advanced Analytics**: Visual insights into placement trends and company participation.
 - **🧪 Demo Data Ready**: Seed scripts for realistic students, recruiters, jobs, and applications.
@@ -114,9 +120,11 @@
 ## 🧠 AI Capabilities
 Integrated with **GitHub Models**, **OpenRouter**, and **Affinda Resume Parser**, the portal provides:
 - **🔍 AI Resume Analysis**: Instant ATS scoring, skills extraction, and improvement suggestions using Affinda API
+- **🎯 RAG-Integrated AI Assistant**: Context-aware chatbots in Student and Admin portals using Retrieval-Augmented Generation for natural, accurate support based on system knowledge.
 - **🎤 Smart Interview Simulator**: Role-specific questions with context from student profile and job description
 - **📊 Automated Evaluation**: Instant feedback on technical accuracy, communication, and relevance
-- **🎯 Personalized Study Roadmap**: AI-generated learning pathways based on role requirements
+- **🗺️ Personalized Study Roadmap**: AI-generated learning pathways based on role requirements
+- **🚀 Prepare for Job Insights**: Custom tailored preparation plans geared toward specific job position requirements.
 - **⚡ Fallback Providers**: Automatic fallback to OpenRouter and GitHub Models if primary provider fails
 
 ### Supported AI Models
