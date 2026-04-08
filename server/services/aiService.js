@@ -1457,10 +1457,10 @@ Extract the following fields (provide reasonable defaults if missing based on co
   "responsibilities": ["String"],
   "perks": ["String"]
 }
-`;
+\`;
     try {
-        const responseText = await callAIWithRetry([{ role: 'system', content: systemPrompt }, { role: 'user', content: text }]);
-        let cleaned = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const responseText = await callAI([{ role: 'system', content: systemPrompt }, { role: 'user', content: text }]);
+        let cleaned = responseText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
         const json = JSON.parse(cleaned);
         return json;
     } catch (error) {
