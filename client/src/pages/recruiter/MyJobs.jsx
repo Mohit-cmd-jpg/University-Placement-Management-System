@@ -342,6 +342,55 @@ const MyJobs = () => {
                                 </div>
                             )}
 
+                            {/* Work Experience */}
+                            {selectedCandidate.student?.studentProfile?.experience?.length > 0 && (
+                                <div style={{ background: 'var(--bg-dark)', borderRadius: '10px', padding: '1.25rem' }}>
+                                    <h4 style={{ marginTop: 0, marginBottom: '1rem', color: 'var(--primary)' }}>Work Experience</h4>
+                                    {selectedCandidate.student.studentProfile.experience.map((exp, i) => (
+                                        <div key={i} style={{ marginBottom: i === selectedCandidate.student.studentProfile.experience.length - 1 ? 0 : '1.25rem', borderBottom: i === selectedCandidate.student.studentProfile.experience.length - 1 ? 'none' : '1px solid var(--border)', paddingBottom: i === selectedCandidate.student.studentProfile.experience.length - 1 ? 0 : '1.25rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                <h5 style={{ margin: 0, fontWeight: 700 }}>{exp.title}</h5>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{exp.duration}</span>
+                                            </div>
+                                            <p style={{ margin: '0.25rem 0', fontWeight: 600, fontSize: '0.9rem', color: 'var(--primary-light)' }}>{exp.company}</p>
+                                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{exp.description}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Projects */}
+                            {selectedCandidate.student?.studentProfile?.projects?.length > 0 && (
+                                <div style={{ background: 'var(--bg-dark)', borderRadius: '10px', padding: '1.25rem' }}>
+                                    <h4 style={{ marginTop: 0, marginBottom: '1rem', color: 'var(--primary)' }}>Projects</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                                        {selectedCandidate.student.studentProfile.projects.map((proj, i) => (
+                                            <div key={i} style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                                <h5 style={{ margin: '0 0 0.5rem 0', fontWeight: 700 }}>{proj.title}</h5>
+                                                <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{proj.description}</p>
+                                                {proj.link && (
+                                                    <a href={proj.link} target="_blank" rel="noreferrer" style={{ fontSize: '0.75rem', color: 'var(--primary)', textDecoration: 'underline' }}>View Project</a>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Certificates */}
+                            {selectedCandidate.student?.studentProfile?.certificates?.length > 0 && (
+                                <div style={{ background: 'var(--bg-dark)', borderRadius: '10px', padding: '1.25rem' }}>
+                                    <h4 style={{ marginTop: 0, marginBottom: '1rem', color: 'var(--primary)' }}>Certificates</h4>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                        {selectedCandidate.student.studentProfile.certificates.map((cert, i) => (
+                                            <span key={i} style={{ padding: '0.4rem 0.8rem', background: 'rgba(16,185,129,0.1)', color: 'var(--success)', borderRadius: '8px', fontSize: '0.8rem', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                                {cert}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Professional Links */}
                             {(selectedCandidate.student?.studentProfile?.linkedIn || selectedCandidate.student?.studentProfile?.github || selectedCandidate.student?.studentProfile?.portfolio) && (
                                 <div style={{ background: 'var(--bg-dark)', borderRadius: '10px', padding: '1.25rem' }}>

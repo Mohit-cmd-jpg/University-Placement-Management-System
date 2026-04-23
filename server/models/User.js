@@ -23,6 +23,18 @@ const userSchema = new mongoose.Schema({
         skills: [String],
         tenthPercentage: Number,
         twelfthPercentage: Number,
+        experience: [{
+            title: String,
+            company: String,
+            duration: String,
+            description: String
+        }],
+        projects: [{
+            title: String,
+            description: String,
+            link: String
+        }],
+        certificates: [String],
         resumeUrl: String,
         resumeBase64: String, // Added for Vercel Serverless storage
         resumeContentType: String,

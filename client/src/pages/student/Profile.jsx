@@ -9,7 +9,8 @@ const StudentProfile = () => {
     const { user, updateUser } = useAuth();
     const [form, setForm] = useState({
         name: '', rollNumber: '', department: '', batch: '', cgpa: '', phoneCountryCode: '+91', phone: '', gender: '',
-        skills: '', tenthPercentage: '', twelfthPercentage: '', linkedIn: '', github: '', portfolio: '', address: ''
+        skills: '', tenthPercentage: '', twelfthPercentage: '', linkedIn: '', github: '', portfolio: '', address: '',
+        experience: [], projects: [], certificates: ''
     });
     const [loading, setLoading] = useState(false);
     const [resumeFile, setResumeFile] = useState(null);
@@ -24,7 +25,10 @@ const StudentProfile = () => {
                 batch: sp.batch || '', cgpa: sp.cgpa || '', phoneCountryCode: sp.phoneCountryCode || '+91', phone: sp.phone || '', gender: sp.gender || '',
                 skills: (sp.skills || []).join(', '), tenthPercentage: sp.tenthPercentage || '',
                 twelfthPercentage: sp.twelfthPercentage || '', linkedIn: sp.linkedIn || '',
-                github: sp.github || '', portfolio: sp.portfolio || '', address: sp.address || ''
+                github: sp.github || '', portfolio: sp.portfolio || '', address: sp.address || '',
+                experience: sp.experience || [],
+                projects: sp.projects || [],
+                certificates: (sp.certificates || []).join(', ')
             });
             // Set photo preview if profile photo exists
             if (sp.profileImage) {
@@ -44,6 +48,44 @@ const StudentProfile = () => {
             return setForm({ ...form, phoneCountryCode: normalized });
         }
         setForm({ ...form, [name]: value });
+    };
+
+    const handleAddExperience = () => {
+        setForm({
+            ...form,
+            experience: [...form.experience, { title: '', company: '', duration: '', description: '' }]
+        });
+    };
+
+    const handleRemoveExperience = (index) => {
+        const newExp = [...form.experience];
+        newExp.splice(index, 1);
+        setForm({ ...form, experience: newExp });
+    };
+
+    const handleExperienceChange = (index, field, value) => {
+        const newExp = [...form.experience];
+        newExp[index][field] = value;
+        setForm({ ...form, experience: newExp });
+    };
+
+    const handleAddProject = () => {
+        setForm({
+            ...form,
+            projects: [...form.projects, { title: '', description: '', link: '' }]
+        });
+    };
+
+    const handleRemoveProject = (index) => {
+        const newProj = [...form.projects];
+        newProj.splice(index, 1);
+        setForm({ ...form, projects: newProj });
+    };
+
+    const handleProjectChange = (index, field, value) => {
+        const newProj = [...form.projects];
+        newProj[index][field] = value;
+        setForm({ ...form, projects: newProj });
     };
 
     const handlePhotoChange = (e) => {
@@ -112,7 +154,14 @@ const StudentProfile = () => {
                 await studentAPI.uploadProfilePhoto(photoFormData);
             }
 
-            const data = { ...form, skills: form.skills.split(',').map(s => s.trim()).filter(Boolean), cgpa: parseFloat(form.cgpa) || 0, tenthPercentage: parseFloat(form.tenthPercentage) || 0, twelfthPercentage: parseFloat(form.twelfthPercentage) || 0 };
+            const data = { 
+                ...form, 
+                skills: form.skills.split(',').map(s => s.trim()).filter(Boolean),
+                certificates: form.certificates.split(',').map(s => s.trim()).filter(Boolean),
+                cgpa: parseFloat(form.cgpa) || 0, 
+                tenthPercentage: parseFloat(form.tenthPercentage) || 0, 
+                twelfthPercentage: parseFloat(form.twelfthPercentage) || 0 
+            };
             const res = await studentAPI.updateProfile(data);
             updateUser(res.data);
 
@@ -160,7 +209,10 @@ const StudentProfile = () => {
                 linkedIn: data.linkedIn || prev.linkedIn,
                 github: data.github || prev.github,
                 portfolio: data.portfolio || prev.portfolio,
-                address: data.address || prev.address
+                address: data.address || prev.address,
+                experience: data.experience || prev.experience,
+                projects: data.projects || prev.projects,
+                certificates: Array.isArray(data.certificates) ? data.certificates.join(', ') : (data.certificates || prev.certificates)
             }));
 
             toast.success('Profile details imported! Please review and fill in missing fields.', { id: toastId });
@@ -305,6 +357,53 @@ const StudentProfile = () => {
                         </div>
                         <div className="form-group"><label>Portfolio (optional)</label><input name="portfolio" value={form.portfolio} onChange={handleChange} /></div>
                         <div className="form-group"><label>Address (optional)</label><textarea name="address" value={form.address} onChange={handleChange} rows="2" /></div>
+
+                        {/* Experience Section */}
+                        <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <h3 style={{ margin: 0 }}>Work Experience</h3>
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={handleAddExperience}>+ Add Experience</button>
+                            </div>
+                            {form.experience.length === 0 && <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '1rem' }}>No experience added yet.</p>}
+                            {form.experience.map((exp, index) => (
+                                <div key={index} style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'rgba(0,0,0,0.02)', borderRadius: '12px', position: 'relative', border: '1px solid var(--border)' }}>
+                                    <button type="button" style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} onClick={() => handleRemoveExperience(index)}>Γ£ò</button>
+                                    <div className="form-row">
+                                        <div className="form-group"><label>Job Title</label><input value={exp.title} onChange={(e) => handleExperienceChange(index, 'title', e.target.value)} placeholder="e.g. Software Intern" /></div>
+                                        <div className="form-group"><label>Company</label><input value={exp.company} onChange={(e) => handleExperienceChange(index, 'company', e.target.value)} placeholder="e.g. Google" /></div>
+                                    </div>
+                                    <div className="form-group"><label>Duration</label><input value={exp.duration} onChange={(e) => handleExperienceChange(index, 'duration', e.target.value)} placeholder="e.g. Jan 2023 - June 2023" /></div>
+                                    <div className="form-group"><label>Description</label><textarea value={exp.description} onChange={(e) => handleExperienceChange(index, 'description', e.target.value)} rows="2" placeholder="Describe your responsibilities..." /></div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Projects Section */}
+                        <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <h3 style={{ margin: 0 }}>Projects</h3>
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={handleAddProject}>+ Add Project</button>
+                            </div>
+                            {form.projects.length === 0 && <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '1rem' }}>No projects added yet.</p>}
+                            {form.projects.map((proj, index) => (
+                                <div key={index} style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'rgba(0,0,0,0.02)', borderRadius: '12px', position: 'relative', border: '1px solid var(--border)' }}>
+                                    <button type="button" style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} onClick={() => handleRemoveProject(index)}>Γ£ò</button>
+                                    <div className="form-group"><label>Project Title</label><input value={proj.title} onChange={(e) => handleProjectChange(index, 'title', e.target.value)} placeholder="e.g. E-commerce App" /></div>
+                                    <div className="form-group"><label>Link (optional)</label><input value={proj.link} onChange={(e) => handleProjectChange(index, 'link', e.target.value)} placeholder="e.g. https://github.com/..." /></div>
+                                    <div className="form-group"><label>Description</label><textarea value={proj.description} onChange={(e) => handleProjectChange(index, 'description', e.target.value)} rows="2" placeholder="Describe your project..." /></div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Certificates Section */}
+                        <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                            <h3 style={{ marginBottom: '1rem' }}>Certificates</h3>
+                            <div className="form-group">
+                                <label>Certificates (comma separated)</label>
+                                <textarea name="certificates" value={form.certificates} onChange={handleChange} rows="2" placeholder="AWS Certified, Google Cloud Professional..." />
+                            </div>
+                        </div>
+
                         {/* Resume Section integrated into the form layout */}
                         <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', marginBottom: '2rem' }}>
                             <h3 style={{ marginBottom: '1rem' }}>Resume</h3>

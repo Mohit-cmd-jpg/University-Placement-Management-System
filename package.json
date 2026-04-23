@@ -1,0 +1,27 @@
+{
+  "name": "minor_project",
+  "version": "1.0.0",
+  "description": "[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)\r [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)\r [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-181717?logo=github&logoColor=white)](https://github.com/Mohit-cmd-jpg/University-Placement-Management-System)\r [![Live Deployment](https://img.shields.io/badge/Live%20App-Online-16a34a?logo=vercel&logoColor=white)](https://uniplacements.vercel.app)\r [![API Status](https://img.shields.io/badge/API-Active-0ea5e9?logo=vercel&logoColor=white)](https://uniplacements.vercel.app/api)\r [![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61dafb?logo=react&logoColor=black)](https://react.dev/)\r [![Node.js](https://img.shields.io/badge/Backend-Node.js-339933?logo=node.js&logoColor=white)](https://nodejs.org/)\r [![MongoDB](https://img.shields.io/badge/Database-MongoDB-13aa52?logo=mongodb&logoColor=white)](https://www.mongodb.com/)\r [![Security Grade A+](https://img.shields.io/badge/Security-A%2B%209.5%2F10-success)](./SECURITY.md)",
+  "main": "patch.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mohit-cmd-jpg/University-Placement-Management-System.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Mohit-cmd-jpg/University-Placement-Management-System/issues"
+  },
+  "homepage": "https://github.com/Mohit-cmd-jpg/University-Placement-Management-System#readme",
+  "dependencies": {
+    "puppeteer": "^24.42.0"
+  }
+}

@@ -1212,7 +1212,14 @@ Return ONLY a JSON object with the following structure:
   "github": "GitHub profile URL (if found)",
   "portfolio": "Portfolio URL (if found)",
   "address": "location/address",
-  "summary": "professional summary"
+  "summary": "professional summary",
+  "experience": [
+    { "title": "Job Title", "company": "Company Name", "duration": "Duration (e.g. Jan 2020 - Present)", "description": "Brief description" }
+  ],
+  "projects": [
+    { "title": "Project Title", "description": "Brief description", "link": "Project link (if found)" }
+  ],
+  "certificates": ["Certificate Name 1", "Certificate Name 2"]
 }
 
 LinkedIn profile text:

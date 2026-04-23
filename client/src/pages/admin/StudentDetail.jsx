@@ -260,6 +260,57 @@ const StudentDetail = () => {
                                 </a>
                             )}
                         </div>
+
+                        {/* Work Experience */}
+                        {sp.experience?.length > 0 && (
+                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                                <h3 style={{ marginBottom: '1.25rem', color: 'var(--primary)' }}>Work Experience</h3>
+                                {sp.experience.map((exp, i) => (
+                                    <div key={i} style={{ marginBottom: '1.5rem', background: 'rgba(0,0,0,0.02)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                            <h4 style={{ margin: 0, color: 'var(--text-primary)' }}>{exp.title}</h4>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{exp.duration}</span>
+                                        </div>
+                                        <p style={{ margin: '0.25rem 0 0.75rem 0', fontWeight: 600, color: 'var(--primary)' }}>{exp.company}</p>
+                                        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{exp.description}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Projects */}
+                        {sp.projects?.length > 0 && (
+                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                                <h3 style={{ marginBottom: '1.25rem', color: 'var(--primary)' }}>Projects</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                    {sp.projects.map((proj, i) => (
+                                        <div key={i} style={{ background: 'rgba(0,0,0,0.02)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                            <h4 style={{ margin: '0 0 0.5rem 0' }}>{proj.title}</h4>
+                                            <p style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{proj.description}</p>
+                                            {proj.link && (
+                                                <a href={proj.link} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                    View Project ↗
+                                                </a>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Certificates */}
+                        {sp.certificates?.length > 0 && (
+                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                                <h3 style={{ marginBottom: '1.25rem', color: 'var(--primary)' }}>Certificates</h3>
+                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                    {sp.certificates.map((cert, i) => (
+                                        <span key={i} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.4rem 1rem', borderRadius: '99px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                            {cert}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
