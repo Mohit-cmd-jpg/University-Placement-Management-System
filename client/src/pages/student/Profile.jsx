@@ -246,7 +246,7 @@ const StudentProfile = () => {
                     }}>
                         <div style={{ flex: 1, minWidth: '200px' }}>
                             <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span>Γ£¿</span> Quick Setup with LinkedIn
+                                <span>✨</span> Quick Setup with LinkedIn
                             </h4>
                             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                 Save time by importing your details from a LinkedIn Profile PDF.
@@ -367,7 +367,7 @@ const StudentProfile = () => {
                             {form.experience.length === 0 && <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '1rem' }}>No experience added yet.</p>}
                             {form.experience.map((exp, index) => (
                                 <div key={index} style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'rgba(0,0,0,0.02)', borderRadius: '12px', position: 'relative', border: '1px solid var(--border)' }}>
-                                    <button type="button" style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} onClick={() => handleRemoveExperience(index)}>Γ£ò</button>
+                                    <button type="button" style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} onClick={() => handleRemoveExperience(index)}>✕</button>
                                     <div className="form-row">
                                         <div className="form-group"><label>Job Title</label><input value={exp.title} onChange={(e) => handleExperienceChange(index, 'title', e.target.value)} placeholder="e.g. Software Intern" /></div>
                                         <div className="form-group"><label>Company</label><input value={exp.company} onChange={(e) => handleExperienceChange(index, 'company', e.target.value)} placeholder="e.g. Google" /></div>
@@ -387,7 +387,7 @@ const StudentProfile = () => {
                             {form.projects.length === 0 && <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '1rem' }}>No projects added yet.</p>}
                             {form.projects.map((proj, index) => (
                                 <div key={index} style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'rgba(0,0,0,0.02)', borderRadius: '12px', position: 'relative', border: '1px solid var(--border)' }}>
-                                    <button type="button" style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} onClick={() => handleRemoveProject(index)}>Γ£ò</button>
+                                    <button type="button" style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} onClick={() => handleRemoveProject(index)}>✕</button>
                                     <div className="form-group"><label>Project Title</label><input value={proj.title} onChange={(e) => handleProjectChange(index, 'title', e.target.value)} placeholder="e.g. E-commerce App" /></div>
                                     <div className="form-group"><label>Link (optional)</label><input value={proj.link} onChange={(e) => handleProjectChange(index, 'link', e.target.value)} placeholder="e.g. https://github.com/..." /></div>
                                     <div className="form-group"><label>Description</label><textarea value={proj.description} onChange={(e) => handleProjectChange(index, 'description', e.target.value)} rows="2" placeholder="Describe your project..." /></div>
