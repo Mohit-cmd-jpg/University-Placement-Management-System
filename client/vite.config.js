@@ -14,27 +14,6 @@ export default defineConfig({
     port: 5500
   },
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react')) {
-              return 'react-vendor'
-            }
-            if (id.includes('framer-motion')) {
-              return 'animation-vendor'
-            }
-            if (id.includes('react-router')) {
-              return 'routing-vendor'
-            }
-            if (id.includes('radix-ui')) {
-              return 'ui-components'
-            }
-            return 'vendor'
-          }
-        }
-      }
-    },
     chunkSizeWarningLimit: 1000
   }
 })
